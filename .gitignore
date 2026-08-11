@@ -64,3 +64,4 @@ server.log
 /tests/
 /Caddyfile
 /bun.lock
+.keys/
