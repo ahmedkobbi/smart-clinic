@@ -67,20 +67,20 @@ export function ConsentManager({ locale }: { locale: Locale }) {
     <div className="space-y-4">
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <StatBox label={locale === 'fr' ? 'Total consentements' : 'Total consents'} value={stats.total} icon={ShieldCheck} color="primary" />
-        <StatBox label={locale === 'fr' ? 'Accordés' : 'Granted'} value={stats.granted} icon={Check} color="success" />
-        <StatBox label={locale === 'fr' ? 'En attente' : 'Pending'} value={stats.pending} icon={Clock} color="warning" />
-        <StatBox label={locale === 'fr' ? 'Retirés' : 'Withdrawn'} value={stats.withdrawn} icon={X} color="danger" />
+        <StatBox label={t.consent.totalConsents} value={stats.total} icon={ShieldCheck} color="primary" />
+        <StatBox label={t.consent.granted} value={stats.granted} icon={Check} color="success" />
+        <StatBox label={t.consent.pending} value={stats.pending} icon={Clock} color="warning" />
+        <StatBox label={t.consent.withdrawn} value={stats.withdrawn} icon={X} color="danger" />
       </div>
 
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-sm font-semibold">{t.audit.consent}</h3>
-          <p className="text-xs text-muted-foreground">{locale === 'fr' ? 'Gestion des consentements RGPD par patient' : 'GDPR consent management per patient'}</p>
+          <p className="text-xs text-muted-foreground">{t.consent.intro}</p>
         </div>
         <Button onClick={() => setDialogOpen(true)} size="sm" className="bg-primary text-primary-foreground">
-          <Plus className="w-3.5 h-3.5" /> {locale === 'fr' ? 'Nouveau' : 'New'}
+          <Plus className="w-3.5 h-3.5" /> {t.consent.new}
         </Button>
       </div>
 
@@ -90,8 +90,8 @@ export function ConsentManager({ locale }: { locale: Locale }) {
       ) : (data?.items || []).length === 0 ? (
         <EmptyState
           icon={ShieldCheck}
-          title={locale === 'fr' ? 'Aucun consentement' : 'No consents'}
-          description={locale === 'fr' ? 'Aucun consentement enregistré. Créez le premier.' : 'No consent recorded. Create the first one.'}
+          title={t.consent.noConsents}
+          description={t.consent.noConsentsDesc}
         />
       ) : (
         <div className="space-y-3">
@@ -114,7 +114,7 @@ export function ConsentManager({ locale }: { locale: Locale }) {
                         {consents[0]?.patient?.firstName} {consents[0]?.patient?.lastName}
                       </p>
                       <p className="text-[10px] text-muted-foreground">
-                        {consents.length} {locale === 'fr' ? 'consentements' : 'consents'}
+                        {consents.length} {t.consent.consentsCount}
                       </p>
                     </div>
                   </div>
@@ -158,7 +158,7 @@ function ConsentRow({ consent: c, locale, t, onChanged }: any) {
         }),
       })
       if (!res.ok) throw new Error('Failed')
-      toast.success(locale === 'fr' ? `Consentement ${newStatus === 'granted' ? 'accordé' : 'retiré'}` : `Consent ${newStatus}`)
+      toast.success(t.consent.consentStatusToast.replace('{status}', newStatus === 'granted' ? t.consent.statuses.granted : t.consent.statuses.withdrawn))
       onChanged()
     } catch (e) {
       toast.error((e as Error).message)
@@ -172,7 +172,7 @@ function ConsentRow({ consent: c, locale, t, onChanged }: any) {
       <div className="min-w-0 flex-1">
         <p className="text-xs font-medium">{t.audit.consentTypes[c.type as keyof typeof t.audit.consentTypes]}</p>
         <p className="text-[10px] text-muted-foreground">
-          {c.grantedAt ? `${locale === 'fr' ? 'Accordé le' : 'Granted'} ${formatDate(c.grantedAt, locale)}` : locale === 'fr' ? 'En attente' : 'Pending'}
+          {c.grantedAt ? `${t.consent.grantedOn} ${formatDate(c.grantedAt, locale)}` : t.consent.statuses.pending}
         </p>
       </div>
       <div className="flex items-center gap-1 shrink-0">
@@ -185,7 +185,7 @@ function ConsentRow({ consent: c, locale, t, onChanged }: any) {
             onClick={() => handleAction('granted')}
             disabled={updating}
             className="p-1 rounded hover:bg-success/20 text-success transition-colors"
-            title={locale === 'fr' ? 'Accorder' : 'Grant'}
+            title={t.consent.grant}
           >
             {updating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
           </button>
@@ -195,7 +195,7 @@ function ConsentRow({ consent: c, locale, t, onChanged }: any) {
             onClick={() => handleAction('withdrawn')}
             disabled={updating}
             className="p-1 rounded hover:bg-destructive/20 text-destructive transition-colors"
-            title={locale === 'fr' ? 'Retirer' : 'Withdraw'}
+            title={t.consent.withdraw}
           >
             <X className="w-3 h-3" />
           </button>
@@ -222,7 +222,7 @@ function ConsentForm({ open, onOpenChange, locale, patients, t, onSuccess }: any
         body: JSON.stringify({ patientId, type, status, notes }),
       })
       if (!res.ok) throw new Error('Failed')
-      toast.success(locale === 'fr' ? 'Consentement enregistré' : 'Consent saved')
+      toast.success(t.consent.savedToast)
       onSuccess()
       onOpenChange(false)
       setPatientId('')
@@ -242,12 +242,12 @@ function ConsentForm({ open, onOpenChange, locale, patients, t, onSuccess }: any
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ShieldCheck className="w-4 h-4 text-primary" />
-            {locale === 'fr' ? 'Nouveau consentement' : 'New consent'}
+            {t.consent.newConsent}
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-3 py-2">
           <div className="space-y-1.5">
-            <Label>{locale === 'fr' ? 'Patient' : 'Patient'}</Label>
+            <Label>{t.billing.patient}</Label>
             <Select value={patientId} onValueChange={setPatientId}>
               <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
               <SelectContent className="glass-floating max-h-72">
@@ -258,7 +258,7 @@ function ConsentForm({ open, onOpenChange, locale, patients, t, onSuccess }: any
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label>{locale === 'fr' ? 'Type de consentement' : 'Consent type'}</Label>
+            <Label>{t.consent.consentType}</Label>
             <Select value={type} onValueChange={setType}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent className="glass-floating">
@@ -269,18 +269,18 @@ function ConsentForm({ open, onOpenChange, locale, patients, t, onSuccess }: any
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label>{locale === 'fr' ? 'Statut' : 'Status'}</Label>
+            <Label>{t.common.status}</Label>
             <Select value={status} onValueChange={setStatus}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent className="glass-floating">
-                <SelectItem value="granted">{locale === 'fr' ? 'Accordé' : 'Granted'}</SelectItem>
-                <SelectItem value="pending">{locale === 'fr' ? 'En attente' : 'Pending'}</SelectItem>
-                <SelectItem value="withdrawn">{locale === 'fr' ? 'Retiré' : 'Withdrawn'}</SelectItem>
+                <SelectItem value="granted">{t.consent.statuses.granted}</SelectItem>
+                <SelectItem value="pending">{t.consent.statuses.pending}</SelectItem>
+                <SelectItem value="withdrawn">{t.consent.statuses.withdrawn}</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label>{locale === 'fr' ? 'Notes' : 'Notes'}</Label>
+            <Label>{t.consent.notes}</Label>
             <Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
           </div>
         </div>

@@ -101,7 +101,7 @@ export function PatientsView({ locale }: { locale: Locale }) {
             <EmptyState
               icon={Search}
               title={t.common.noResults}
-              description={locale === 'fr' ? 'Aucun patient trouvé. Essayez une autre recherche ou créez un nouveau patient.' : 'No patient found. Try another search or create a new patient.'}
+              description={t.patients.searchEmpty}
               action={{ label: t.patients.new, onClick: () => setNewPatientOpen(true) }}
             />
           ) : (
@@ -131,7 +131,7 @@ export function PatientsView({ locale }: { locale: Locale }) {
                     </div>
                   </div>
                   <div className="col-span-3 hidden md:flex items-center text-muted-foreground">
-                    {p.birthDate ? `${calculateAge(p.birthDate)} ${locale === 'fr' ? 'ans' : 'yrs'}` : '—'}
+                    {p.birthDate ? `${calculateAge(p.birthDate)} ${t.common.yearsShort}` : '—'}
                   </div>
                   <div className="col-span-3 hidden md:flex items-center text-muted-foreground text-xs">
                     {p.consultations?.[0]?.startAt ? formatDate(p.consultations[0].startAt, locale) : '—'}
@@ -219,7 +219,7 @@ function PatientDetail({ patient, locale }: { patient: any; locale: Locale }) {
             <div className="min-w-0">
               <SheetTitle className="text-xl">{patient.firstName} {patient.lastName}</SheetTitle>
               <SheetDescription className="flex items-center gap-2 flex-wrap mt-1">
-                {age && <span>{age} {locale === 'fr' ? 'ans' : 'yrs'}</span>}
+                {age && <span>{age} {t.common.yearsShort}</span>}
                 {patient.sex && <span>· {patient.sex}</span>}
                 {patient.bloodType && (
                   <span className="flex items-center gap-1">
@@ -237,7 +237,7 @@ function PatientDetail({ patient, locale }: { patient: any; locale: Locale }) {
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md glass-button text-xs font-medium hover:text-primary transition-colors"
             >
               <FileDown className="w-3.5 h-3.5" />
-              <span className="hidden md:inline">{locale === 'fr' ? 'Synthèse' : 'Summary'}</span>
+              <span className="hidden md:inline">{t.patients.summary}</span>
             </a>
             <Button
               variant="outline"
@@ -428,7 +428,7 @@ function PatientDetail({ patient, locale }: { patient: any; locale: Locale }) {
                 onClick={() => setPrescriptionDialog(true)}
                 className="text-[11px] text-primary hover:underline flex items-center gap-1"
               >
-                <Plus className="w-3 h-3" /> {locale === 'fr' ? 'Ordonnance' : 'Prescribe'}
+                <Plus className="w-3 h-3" /> {t.patients.prescribe}
               </button>
             </div>
             {patient.prescriptions?.length > 0 ? (
@@ -446,7 +446,7 @@ function PatientDetail({ patient, locale }: { patient: any; locale: Locale }) {
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">{locale === 'fr' ? 'Aucune ordonnance active' : 'No active prescriptions'}</p>
+              <p className="text-sm text-muted-foreground">{t.patients.noActivePrescriptions}</p>
             )}
           </section>
 
@@ -531,7 +531,7 @@ function AddAllergyDialog({ open, onOpenChange, patientId, onSuccess, locale }: 
         body: JSON.stringify({ substance, severity }),
       })
       if (!res.ok) throw new Error('Failed')
-      toast.success(locale === 'fr' ? 'Allergie ajoutée' : 'Allergy added')
+      toast.success(t.patients.allergyAddedToast)
       setSubstance('')
       setSeverity('moderate')
       onSuccess()
@@ -554,17 +554,17 @@ function AddAllergyDialog({ open, onOpenChange, patientId, onSuccess, locale }: 
         </DialogHeader>
         <div className="space-y-3 py-2">
           <div className="space-y-1.5">
-            <Label>{locale === 'fr' ? 'Substance' : 'Substance'}</Label>
-            <Input value={substance} onChange={(e) => setSubstance(e.target.value)} placeholder={locale === 'fr' ? 'ex: Pénicilline' : 'e.g. Penicillin'} />
+            <Label>{t.patients.substance}</Label>
+            <Input value={substance} onChange={(e) => setSubstance(e.target.value)} placeholder={t.patients.substancePlaceholder} />
           </div>
           <div className="space-y-1.5">
-            <Label>{locale === 'fr' ? 'Sévérité' : 'Severity'}</Label>
+            <Label>{t.patients.severity}</Label>
             <Select value={severity} onValueChange={setSeverity}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent className="glass-floating">
-                <SelectItem value="mild">{locale === 'fr' ? 'Légère' : 'Mild'}</SelectItem>
-                <SelectItem value="moderate">{locale === 'fr' ? 'Modérée' : 'Moderate'}</SelectItem>
-                <SelectItem value="severe">{locale === 'fr' ? 'Sévère' : 'Severe'}</SelectItem>
+                <SelectItem value="mild">{t.patients.severityLevels.mild}</SelectItem>
+                <SelectItem value="moderate">{t.patients.severityLevels.moderate}</SelectItem>
+                <SelectItem value="severe">{t.patients.severityLevels.severe}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -609,7 +609,7 @@ function AddVitalDialog({ open, onOpenChange, patientId, onSuccess, locale }: an
         body: JSON.stringify({ type, value, unit, recordedBy: 'Dr. Current' }),
       })
       if (!res.ok) throw new Error('Failed')
-      toast.success(locale === 'fr' ? 'Constante enregistrée' : 'Vital recorded')
+      toast.success(t.patients.vitalRecordedToast)
       setValue('')
       onSuccess()
       onOpenChange(false)
@@ -631,7 +631,7 @@ function AddVitalDialog({ open, onOpenChange, patientId, onSuccess, locale }: an
         </DialogHeader>
         <div className="space-y-3 py-2">
           <div className="space-y-1.5">
-            <Label>{locale === 'fr' ? 'Type' : 'Type'}</Label>
+            <Label>{t.common.type}</Label>
             <Select value={type} onValueChange={handleTypeChange}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent className="glass-floating">
@@ -646,11 +646,11 @@ function AddVitalDialog({ open, onOpenChange, patientId, onSuccess, locale }: an
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1.5">
-              <Label>{locale === 'fr' ? 'Valeur' : 'Value'}</Label>
+              <Label>{t.common.value}</Label>
               <Input value={value} onChange={(e) => setValue(e.target.value)} placeholder={type === 'blood_pressure' ? '120/80' : '...'} className="font-mono" />
             </div>
             <div className="space-y-1.5">
-              <Label>{locale === 'fr' ? 'Unité' : 'Unit'}</Label>
+              <Label>{t.patients.unit}</Label>
               <Input value={unit} onChange={(e) => setUnit(e.target.value)} />
             </div>
           </div>
@@ -688,8 +688,8 @@ function BreakGlassDialog({ open, onOpenChange, patient, locale }: any) {
         throw new Error(err.error || 'Failed')
       }
       const result = await res.json()
-      toast.success(locale === 'fr' ? `Accès de secours enregistré — hash: ${result.hash.slice(0, 12)}…` : `Break-glass logged — hash: ${result.hash.slice(0, 12)}…`)
-      toast.warning(locale === 'fr' ? 'Officer de conformité notifié' : 'Compliance officer notified', { duration: 5000 })
+      toast.success(t.audit.breakGlassLoggedToast.replace('{hash}', result.hash.slice(0, 12)))
+      toast.warning(t.audit.complianceOfficerNotifiedToast, { duration: 5000 })
       setReason('')
       setJustification('')
       onOpenChange(false)
@@ -706,36 +706,36 @@ function BreakGlassDialog({ open, onOpenChange, patient, locale }: any) {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-destructive">
             <Lock className="w-5 h-5" />
-            {locale === 'fr' ? 'Accès de secours (Break-Glass)' : 'Break-Glass Emergency Access'}
+            {t.audit.breakGlassTitle}
           </DialogTitle>
           <DialogDescription className="text-destructive/80">
-            {locale === 'fr'
-              ? `Vous êtes sur le point d'accéder au dossier de ${patient.firstName} ${patient.lastName} hors des règles normales d'accès. Cette action sera journalisée et notifiée à l'officier de conformité.`
-              : `You are about to access ${patient.firstName} ${patient.lastName}'s record outside normal access rules. This action will be logged and the compliance officer will be notified.`}
+            {t.audit.breakGlassDesc
+              .replace('{firstName}', patient.firstName)
+              .replace('{lastName}', patient.lastName)}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3 py-2">
           <div className="space-y-1.5">
-            <Label>{locale === 'fr' ? 'Raison de l\'urgence *' : 'Emergency reason *'}</Label>
+            <Label>{t.audit.emergencyReason}</Label>
             <Input
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder={locale === 'fr' ? 'ex: Patient inconscient, urgence vitale' : 'e.g. Patient unconscious, life-threatening'}
+              placeholder={t.audit.emergencyReasonPlaceholder}
             />
             {reason.length > 0 && reason.length < 10 && (
-              <p className="text-[10px] text-destructive">{locale === 'fr' ? 'Minimum 10 caractères' : 'Minimum 10 characters'}</p>
+              <p className="text-[10px] text-destructive">{t.common.minChars.replace('{n}', '10')}</p>
             )}
           </div>
           <div className="space-y-1.5">
-            <Label>{locale === 'fr' ? 'Justification détaquée *' : 'Detailed justification *'}</Label>
+            <Label>{t.audit.detailedJustification}</Label>
             <Textarea
               rows={4}
               value={justification}
               onChange={(e) => setJustification(e.target.value)}
-              placeholder={locale === 'fr' ? 'Décrivez la situation clinique nécessitant cet accès...' : 'Describe the clinical situation requiring this access...'}
+              placeholder={t.audit.detailedJustificationPlaceholder}
             />
             {justification.length > 0 && justification.length < 20 && (
-              <p className="text-[10px] text-destructive">{locale === 'fr' ? 'Minimum 20 caractères' : 'Minimum 20 characters'}</p>
+              <p className="text-[10px] text-destructive">{t.common.minChars.replace('{n}', '20')}</p>
             )}
             <p className="text-[10px] text-muted-foreground">{justification.length}/20</p>
           </div>
@@ -748,7 +748,7 @@ function BreakGlassDialog({ open, onOpenChange, patient, locale }: any) {
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
             <Lock className="w-3.5 h-3.5" />
-            {locale === 'fr' ? 'Confirmer l\'accès de secours' : 'Confirm break-glass'}
+            {t.audit.confirmBreakGlass}
           </Button>
         </DialogFooter>
       </DialogContent>

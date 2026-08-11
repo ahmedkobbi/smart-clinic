@@ -83,15 +83,15 @@ export function StaffView({ locale }: { locale: Locale }) {
     <div className="p-4 md:p-6 space-y-4 pb-24">
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard label={locale === 'fr' ? 'Praticiens' : 'Practitioners'} value={practitioners.length} icon={Users} accent="primary" delay={0} />
-        <StatCard label={locale === 'fr' ? 'Credentials' : 'Credentials'} value={stats.total} icon={Award} accent="info" delay={50} />
-        <StatCard label={locale === 'fr' ? 'Expirent bientôt' : 'Expiring soon'} value={stats.expiring} icon={Clock} accent="warning" delay={100} />
-        <StatCard label={locale === 'fr' ? 'Expirés' : 'Expired'} value={stats.expired} icon={AlertTriangle} accent="warning" delay={150} />
+        <StatCard label={t.settings.practitioners} value={practitioners.length} icon={Users} accent="primary" delay={0} />
+        <StatCard label={t.staff.credentials} value={stats.total} icon={Award} accent="info" delay={50} />
+        <StatCard label={t.staff.expiringSoon} value={stats.expiring} icon={Clock} accent="warning" delay={100} />
+        <StatCard label={t.staff.expired} value={stats.expired} icon={AlertTriangle} accent="warning" delay={150} />
       </div>
 
       {/* Practitioners grid */}
       <div>
-        <h3 className="text-sm font-semibold mb-3">{locale === 'fr' ? 'Équipe médicale' : 'Medical team'}</h3>
+        <h3 className="text-sm font-semibold mb-3">{t.staff.medicalTeam}</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {practitioners.map((p: any, i: number) => {
             const practitionerCreds = (credData?.items || []).filter((c: any) => c.practitionerId === p.id)
@@ -120,16 +120,16 @@ export function StaffView({ locale }: { locale: Locale }) {
                 <div className="flex items-center gap-1.5 flex-wrap">
                   {expired > 0 && (
                     <span className="status-pill text-destructive text-[10px]">
-                      {expired} {locale === 'fr' ? 'expiré(s)' : 'expired'}
+                      {expired} {t.staff.expiredPlural}
                     </span>
                   )}
                   {expiring > 0 && (
                     <span className="status-pill text-warning text-[10px]">
-                      {expiring} {locale === 'fr' ? 'à renouveler' : 'expiring'}
+                      {expiring} {t.staff.toRenew}
                     </span>
                   )}
                   {expired === 0 && expiring === 0 && (
-                    <span className="status-pill text-success text-[10px]">{locale === 'fr' ? 'À jour' : 'Up to date'}</span>
+                    <span className="status-pill text-success text-[10px]">{t.staff.upToDate}</span>
                   )}
                 </div>
               </motion.div>
@@ -141,13 +141,13 @@ export function StaffView({ locale }: { locale: Locale }) {
       {/* Credentials table */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold">{locale === 'fr' ? 'Suivi des credentials' : 'Credential tracking'}</h3>
+          <h3 className="text-sm font-semibold">{t.staff.credentialTracking}</h3>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-40 glass-base border-0 h-9">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="glass-floating">
-              <SelectItem value="all">{locale === 'fr' ? 'Tous' : 'All'}</SelectItem>
+              <SelectItem value="all">{t.common.all}</SelectItem>
               <SelectItem value="valid">{STATUS_CONFIG.valid.label[locale as 'fr' | 'en']}</SelectItem>
               <SelectItem value="expiring_soon">{STATUS_CONFIG.expiring_soon.label[locale as 'fr' | 'en']}</SelectItem>
               <SelectItem value="expired">{STATUS_CONFIG.expired.label[locale as 'fr' | 'en']}</SelectItem>
@@ -156,11 +156,11 @@ export function StaffView({ locale }: { locale: Locale }) {
         </div>
         <div className="glass-card rounded-2xl overflow-hidden">
           <div className="grid grid-cols-12 gap-3 px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground border-b border-border/40">
-            <div className="col-span-3">{locale === 'fr' ? 'Praticien' : 'Practitioner'}</div>
-            <div className="col-span-3">{locale === 'fr' ? 'Type' : 'Type'}</div>
-            <div className="col-span-2 hidden md:block">{locale === 'fr' ? 'N°' : 'Number'}</div>
-            <div className="col-span-2 hidden md:block">{locale === 'fr' ? 'Expiration' : 'Expires'}</div>
-            <div className="col-span-3 md:col-span-2 text-right">{locale === 'fr' ? 'Statut' : 'Status'}</div>
+            <div className="col-span-3">{t.appointments.practitioner}</div>
+            <div className="col-span-3">{t.common.type}</div>
+            <div className="col-span-2 hidden md:block">{t.staff.number}</div>
+            <div className="col-span-2 hidden md:block">{t.staff.expires}</div>
+            <div className="col-span-3 md:col-span-2 text-right">{t.common.status}</div>
           </div>
           <ScrollArea className="h-[40vh]">
             {isLoading ? (

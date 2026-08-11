@@ -91,11 +91,11 @@ export function PrescriptionForm({
 
   const handleSubmit = async () => {
     if (!form.practitionerId || !form.medication) {
-      toast.error(locale === 'fr' ? 'Praticien et médicament requis' : 'Practitioner and medication required')
+      toast.error(t.prescriptions.practitionerMedicationRequiredToast)
       return
     }
     if (hasSevereWarning && !overrideConfirm) {
-      toast.error(locale === 'fr' ? 'Confirmation requise pour allergie sévère' : 'Confirmation required for severe allergy')
+      toast.error(t.prescriptions.severeAllergyConfirmToast)
       return
     }
     setSubmitting(true)
@@ -110,9 +110,9 @@ export function PrescriptionForm({
         }),
       })
       if (!res.ok) throw new Error('Failed')
-      toast.success(locale === 'fr' ? 'Ordonnance créée' : 'Prescription created')
+      toast.success(t.prescriptions.createdToast)
       if (warnings.length > 0) {
-        toast.warning(locale === 'fr' ? 'Ordonnance avec override d\'allergie journalisé' : 'Prescription with allergy override logged')
+        toast.warning(t.prescriptions.allergyOverrideLoggedToast)
       }
       onSuccess()
       onOpenChange(false)
@@ -132,10 +132,10 @@ export function PrescriptionForm({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Pill className="w-5 h-5 text-primary" />
-            {locale === 'fr' ? 'Nouvelle ordonnance' : 'New Prescription'}
+            {t.prescriptions.new}
           </DialogTitle>
           <DialogDescription>
-            {locale === 'fr' ? 'Vérification automatique des allergies' : 'Automatic allergy check'}
+            {t.prescriptions.allergyCheck}
           </DialogDescription>
         </DialogHeader>
 
@@ -144,7 +144,7 @@ export function PrescriptionForm({
           <div className="p-3 rounded-lg bg-destructive/5 border border-destructive/20">
             <p className="text-[10px] uppercase font-semibold text-destructive mb-1.5 flex items-center gap-1">
               <AlertTriangle className="w-3 h-3" />
-              {locale === 'fr' ? 'Allergies connues du patient' : 'Patient known allergies'}
+              {t.prescriptions.knownAllergies}
             </p>
             <div className="flex flex-wrap gap-1.5">
               {patientAllergies.map((a, i) => (
@@ -165,7 +165,7 @@ export function PrescriptionForm({
 
         <div className="grid grid-cols-2 gap-3 py-2">
           <div className="space-y-1.5 col-span-2">
-            <Label>{locale === 'fr' ? 'Praticien' : 'Practitioner'} *</Label>
+            <Label>{t.appointments.practitioner} *</Label>
             <select
               value={form.practitionerId}
               onChange={(e) => setForm({ ...form, practitionerId: e.target.value })}
@@ -179,7 +179,7 @@ export function PrescriptionForm({
           </div>
 
           <div className="space-y-1.5 col-span-2">
-            <Label>{locale === 'fr' ? 'Médicament' : 'Medication'} *</Label>
+            <Label>{t.prescriptions.medication} *</Label>
             <Input
               value={form.medication}
               onChange={(e) => {
@@ -187,7 +187,7 @@ export function PrescriptionForm({
                 checkInteractions(e.target.value)
               }}
               list="meds-list"
-              placeholder={locale === 'fr' ? 'Nom du médicament...' : 'Medication name...'}
+              placeholder={t.prescriptions.medicationPlaceholder}
               className="glass-base border-0"
             />
             <datalist id="meds-list">
@@ -196,7 +196,7 @@ export function PrescriptionForm({
             {checking && (
               <p className="text-[10px] text-muted-foreground flex items-center gap-1">
                 <Loader2 className="w-3 h-3 animate-spin" />
-                {locale === 'fr' ? 'Vérification des allergies...' : 'Checking allergies...'}
+                {t.prescriptions.checkingAllergies}
               </p>
             )}
           </div>
@@ -238,9 +238,7 @@ export function PrescriptionForm({
                       className="w-4 h-4"
                     />
                     <label htmlFor="override" className="text-xs flex-1">
-                      {locale === 'fr'
-                        ? 'Je confirme avoir informé le patient et assume la responsabilité de cette prescription malgré l\'allergie sévère'
-                        : 'I confirm I have informed the patient and assume responsibility for this prescription despite the severe allergy'}
+                      {t.prescriptions.overrideConfirm}
                     </label>
                   </div>
                 )}
@@ -249,23 +247,23 @@ export function PrescriptionForm({
           </AnimatePresence>
 
           <div className="space-y-1.5">
-            <Label>{locale === 'fr' ? 'Dosage' : 'Dosage'}</Label>
+            <Label>{t.prescriptions.dosage}</Label>
             <Input value={form.dosage} onChange={(e) => setForm({ ...form, dosage: e.target.value })} placeholder="500 mg" className="glass-base border-0" />
           </div>
           <div className="space-y-1.5">
-            <Label>{locale === 'fr' ? 'Fréquence' : 'Frequency'}</Label>
+            <Label>{t.prescriptions.frequency}</Label>
             <Input value={form.frequency} onChange={(e) => setForm({ ...form, frequency: e.target.value })} placeholder="3x/jour" className="glass-base border-0" />
           </div>
           <div className="space-y-1.5">
-            <Label>{locale === 'fr' ? 'Durée' : 'Duration'}</Label>
+            <Label>{t.common.duration}</Label>
             <Input value={form.duration} onChange={(e) => setForm({ ...form, duration: e.target.value })} placeholder="7 jours" className="glass-base border-0" />
           </div>
           <div className="space-y-1.5">
-            <Label>{locale === 'fr' ? 'Quantité' : 'Quantity'}</Label>
+            <Label>{t.prescriptions.quantity}</Label>
             <Input type="number" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} placeholder="21" className="glass-base border-0" />
           </div>
           <div className="space-y-1.5 col-span-2">
-            <Label>{locale === 'fr' ? 'Instructions' : 'Instructions'}</Label>
+            <Label>{t.prescriptions.instructions}</Label>
             <Textarea rows={2} value={form.instructions} onChange={(e) => setForm({ ...form, instructions: e.target.value })} className="glass-base border-0" />
           </div>
         </div>
@@ -273,7 +271,7 @@ export function PrescriptionForm({
         <DialogFooter className="flex items-center justify-between">
           <p className="text-[11px] text-muted-foreground flex items-center gap-1">
             <Sparkles className="w-3 h-3 text-glass-accent" />
-            {locale === 'fr' ? 'Vérification allergies active' : 'Allergy check active'}
+            {t.prescriptions.allergyCheckActive}
           </p>
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => onOpenChange(false)}>{t.common.cancel}</Button>

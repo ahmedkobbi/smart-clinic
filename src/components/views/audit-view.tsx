@@ -83,9 +83,9 @@ export function AuditView({ locale }: { locale: Locale }) {
       const result = await verifyChain()
       setVerifyResult(result)
       if (result.valid) {
-        toast.success(locale === 'fr' ? `Chaîne valide — ${result.checked} entrées vérifiées` : `Chain valid — ${result.checked} entries checked`)
+        toast.success(t.audit.chainValidToast.replace('{n}', String(result.checked)))
       } else {
-        toast.error(locale === 'fr' ? `Chaîne corrompue à l'entrée ${result.checked}` : `Chain broken at entry ${result.checked}`)
+        toast.error(t.audit.chainBrokenToast.replace('{n}', String(result.checked)))
       }
     } catch (e) {
       toast.error((e as Error).message)
@@ -139,10 +139,10 @@ export function AuditView({ locale }: { locale: Locale }) {
                   </h3>
                   <p className="text-xs text-muted-foreground mt-0.5">
                     {verifyResult === null
-                      ? (locale === 'fr' ? 'Chaîne infalsifiable — cliquez pour vérifier' : 'Tamper-evident chain — click to verify')
+                      ? t.audit.chainVerifyHint
                       : verifyResult.valid
                         ? `${t.audit.chainValid} · ${verifyResult.checked} ${t.audit.entries}`
-                        : `${t.audit.chainInvalid} · ${locale === 'fr' ? 'à l\'entrée' : 'at entry'} ${verifyResult.checked}`}
+                        : `${t.audit.chainInvalid} · ${t.audit.chainBrokenAt} ${verifyResult.checked}`}
                   </p>
                 </div>
               </div>
@@ -181,9 +181,7 @@ export function AuditView({ locale }: { locale: Locale }) {
                   )}
                 </div>
                 <p className="text-[10px] text-muted-foreground mt-1">
-                  {locale === 'fr'
-                    ? 'Chaque entrée contient le hash de la précédente — toute modification trahit la rupture de la chaîne.'
-                    : 'Each entry contains the hash of the previous one — any modification betrays the chain break.'}
+                  {t.audit.chainDesc}
                 </p>
               </motion.div>
             )}
@@ -196,7 +194,7 @@ export function AuditView({ locale }: { locale: Locale }) {
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder={locale === 'fr' ? 'Rechercher utilisateur, action, hash…' : 'Search user, action, hash…'}
+                placeholder={t.audit.searchPlaceholder}
                 className="pl-10 glass-base border-0 h-11"
               />
             </div>
@@ -205,7 +203,7 @@ export function AuditView({ locale }: { locale: Locale }) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="glass-floating">
-                <SelectItem value="all">{locale === 'fr' ? 'Toutes actions' : 'All actions'}</SelectItem>
+                <SelectItem value="all">{t.common.allActions}</SelectItem>
                 {Object.entries(t.audit.actions).map(([k, v]) => (
                   <SelectItem key={k} value={k}>{v}</SelectItem>
                 ))}
@@ -216,7 +214,7 @@ export function AuditView({ locale }: { locale: Locale }) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="glass-floating">
-                <SelectItem value="all">{locale === 'fr' ? 'Toutes entités' : 'All entities'}</SelectItem>
+                <SelectItem value="all">{t.common.allEntities}</SelectItem>
                 {Object.entries(t.audit.entities).map(([k, v]) => (
                   <SelectItem key={k} value={k}>{v}</SelectItem>
                 ))}
@@ -240,8 +238,8 @@ export function AuditView({ locale }: { locale: Locale }) {
               ) : filtered.length === 0 ? (
                 <EmptyState
                   icon={ShieldCheck}
-                  title={locale === 'fr' ? 'Aucune entrée' : 'No entries'}
-                  description={locale === 'fr' ? 'Aucune entrée d\'audit ne correspond aux filtres.' : 'No audit entries match the filters.'}
+                  title={t.audit.noEntries}
+                  description={t.audit.noEntriesDesc}
                 />
               ) : (
                 filtered.map((log: any, i: number) => {
@@ -274,7 +272,7 @@ export function AuditView({ locale }: { locale: Locale }) {
                         )}
                         {log.reason && (
                           <Badge variant="destructive" className="text-[9px]">
-                            {locale === 'fr' ? 'Urgence' : 'Break-glass'}
+                            {t.audit.breakGlassBadge}
                           </Badge>
                         )}
                       </div>
@@ -300,9 +298,7 @@ export function AuditView({ locale }: { locale: Locale }) {
           {/* Footer info */}
           <div className="glass-base rounded-xl p-3 text-[11px] text-muted-foreground leading-relaxed">
             <ShieldAlert className="w-3.5 h-3.5 inline mr-1.5 text-warning" />
-            {locale === 'fr'
-              ? 'Le journal d\'audit est infalsifiable: chaque entrée est liée à la précédente par un hash SHA-256. Toute modification d\'une entrée trahit la rupture de la chaîne lors de la vérification.'
-              : 'The audit log is tamper-evident: each entry is linked to the previous one via SHA-256 hash. Any modification of an entry betrays the chain break upon verification.'}
+            {t.audit.tamperEvidentDesc}
           </div>
         </TabsContent>
 

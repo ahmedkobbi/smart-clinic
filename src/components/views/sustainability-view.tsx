@@ -51,17 +51,15 @@ export function SustainabilityView({ locale }: { locale: Locale }) {
             </div>
             <div>
               <h2 className="text-xl font-bold">
-                {locale === 'fr' ? 'Tableau de bord durabilité' : 'Sustainability Dashboard'}
+                {t.sustainability.title}
               </h2>
               <p className="text-sm text-muted-foreground">
-                {locale === 'fr' ? 'Impact environnemental de la digitalisation' : 'Environmental impact of digitization'}
+                {t.sustainability.subtitle}
               </p>
             </div>
           </div>
           <p className="text-xs text-muted-foreground mt-3 max-w-2xl leading-relaxed">
-            {locale === 'fr'
-              ? 'Smart Clinic estime les économies de papier, CO₂ et ressources réalisées grâce à la digitalisation des consultations, ordonnances et factures. Données calculées selon les facteurs d\'émission ADEME.'
-              : 'Smart Clinic estimates paper, CO₂ and resource savings from digitizing consultations, prescriptions and invoices. Data calculated using ADEME emission factors.'}
+            {t.sustainability.intro}
           </p>
         </div>
       </motion.div>
@@ -69,28 +67,28 @@ export function SustainabilityView({ locale }: { locale: Locale }) {
       {/* KPI grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <EcoStat
-          label={locale === 'fr' ? 'Feuilles économisées' : 'Sheets saved'}
-          value={data.totalSheetsSaved.toLocaleString(locale === 'fr' ? 'fr-FR' : 'en-US')}
+          label={t.sustainability.sheetsSaved}
+          value={data.totalSheetsSaved.toLocaleString(locale)}
           icon={FileText}
           color="success"
           delay={0}
         />
         <EcoStat
-          label={locale === 'fr' ? 'CO₂ évité' : 'CO₂ avoided'}
+          label={t.sustainability.co2Avoided}
           value={`${data.totalCo2KgSaved} kg`}
           icon={TrendingDown}
           color="primary"
           delay={50}
         />
         <EcoStat
-          label={locale === 'fr' ? 'Arbres préservés' : 'Trees saved'}
+          label={t.sustainability.treesSaved}
           value={data.treesSaved.toString()}
           icon={TreePine}
           color="success"
           delay={100}
         />
         <EcoStat
-          label={locale === 'fr' ? 'Eau économisée' : 'Water saved'}
+          label={t.sustainability.waterSaved}
           value={`${(data.waterLitersSaved / 1000).toFixed(1)} m³`}
           icon={Droplet}
           color="info"
@@ -108,9 +106,9 @@ export function SustainabilityView({ locale }: { locale: Locale }) {
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-sm font-semibold">
-              {locale === 'fr' ? 'Évolution mensuelle (6 mois)' : 'Monthly trend (6 months)'}
+              {t.sustainability.monthlyTrend}
             </h3>
-            <p className="text-xs text-muted-foreground">{locale === 'fr' ? 'Feuilles économisées par mois' : 'Sheets saved per month'}</p>
+            <p className="text-xs text-muted-foreground">{t.sustainability.sheetsPerMonth}</p>
           </div>
         </div>
         <ResponsiveContainer width="100%" height={240}>
@@ -127,7 +125,7 @@ export function SustainabilityView({ locale }: { locale: Locale }) {
                 fontSize: 12,
               }}
             />
-            <Bar dataKey="sheets" fill="var(--success)" radius={[6, 6, 0, 0]} name={locale === 'fr' ? 'Feuilles' : 'Sheets'} />
+            <Bar dataKey="sheets" fill="var(--success)" radius={[6, 6, 0, 0]} name={t.sustainability.sheets} />
           </BarChart>
         </ResponsiveContainer>
       </motion.div>
@@ -141,25 +139,25 @@ export function SustainabilityView({ locale }: { locale: Locale }) {
           transition={{ delay: 250 }}
           className="glass-card rounded-2xl p-5"
         >
-          <h3 className="text-sm font-semibold mb-4">{locale === 'fr' ? 'Détail par source' : 'Breakdown by source'}</h3>
+          <h3 className="text-sm font-semibold mb-4">{t.sustainability.breakdownBySource}</h3>
           <div className="space-y-3">
             <BreakdownRow
               icon={FileText}
-              label={locale === 'fr' ? 'Consultations digitalisées' : 'Digitalized consultations'}
+              label={t.sustainability.digitalizedConsultations}
               value={data.breakdown.consultations}
               total={data.totalSheetsSaved}
               color="var(--primary)"
             />
             <BreakdownRow
               icon={Pill}
-              label={locale === 'fr' ? 'Ordonnances électroniques' : 'Electronic prescriptions'}
+              label={t.sustainability.electronicPrescriptions}
               value={data.breakdown.prescriptions}
               total={data.totalSheetsSaved}
               color="var(--glass-accent)"
             />
             <BreakdownRow
               icon={Receipt}
-              label={locale === 'fr' ? 'Factures dématérialisées' : 'Paperless invoices'}
+              label={t.sustainability.paperlessInvoices}
               value={data.breakdown.invoices}
               total={data.totalSheetsSaved}
               color="var(--success)"
@@ -174,21 +172,21 @@ export function SustainabilityView({ locale }: { locale: Locale }) {
           transition={{ delay: 300 }}
           className="glass-card rounded-2xl p-5"
         >
-          <h3 className="text-sm font-semibold mb-4">{locale === 'fr' ? 'Équivalences concrètes' : 'Real-world equivalences'}</h3>
+          <h3 className="text-sm font-semibold mb-4">{t.sustainability.equivalences}</h3>
           <div className="space-y-3">
             <EquivalenceRow
               icon={Car}
-              label={locale === 'fr' ? 'Km en voiture évités' : 'Km of driving avoided'}
-              value={`${data.equivalences.kmDriven.toLocaleString(locale === 'fr' ? 'fr-FR' : 'en-US')} km`}
+              label={t.sustainability.kmAvoided}
+              value={`${data.equivalences.kmDriven.toLocaleString(locale)} km`}
             />
             <EquivalenceRow
               icon={Smartphone}
-              label={locale === 'fr' ? 'Charges de téléphone' : 'Phone charges'}
-              value={data.equivalences.phoneCharges.toLocaleString(locale === 'fr' ? 'fr-FR' : 'en-US')}
+              label={t.sustainability.phoneCharges}
+              value={data.equivalences.phoneCharges.toLocaleString(locale)}
             />
             <EquivalenceRow
               icon={TreePine}
-              label={locale === 'fr' ? 'Arbres plantés équivalent' : 'Equivalent trees planted'}
+              label={t.sustainability.treesPlanted}
               value={data.equivalences.treesPlantedEquivalent.toString()}
             />
           </div>
@@ -197,9 +195,7 @@ export function SustainabilityView({ locale }: { locale: Locale }) {
 
       {/* ADEME attribution */}
       <div className="glass-base rounded-xl p-3 text-[10px] text-muted-foreground leading-relaxed">
-        {locale === 'fr'
-          ? 'Facteurs d\'émission: ADEME (Agence de la transition écologique) — 1 rame (500 feuilles) ≈ 2.3 kg CO₂ · 1 arbre ≈ 8333 feuilles · 10L d\'eau par feuille (production).'
-          : 'Emission factors: ADEME — 1 ream (500 sheets) ≈ 2.3 kg CO₂ · 1 tree ≈ 8333 sheets · 10L water per sheet (production).'}
+        {t.sustainability.methodology}
       </div>
     </div>
   )

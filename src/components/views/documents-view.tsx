@@ -73,7 +73,7 @@ export function DocumentsView({ locale }: { locale: Locale }) {
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder={locale === 'fr' ? 'Rechercher un document…' : 'Search document…'}
+            placeholder={t.documents.searchPlaceholder}
             className="pl-10 glass-base border-0 h-11"
           />
         </div>
@@ -83,14 +83,14 @@ export function DocumentsView({ locale }: { locale: Locale }) {
             <SelectValue />
           </SelectTrigger>
           <SelectContent className="glass-floating">
-            <SelectItem value="all">{locale === 'fr' ? 'Toutes catégories' : 'All categories'}</SelectItem>
+            <SelectItem value="all">{t.common.allCategories}</SelectItem>
             {Object.entries(CATEGORY_CONFIG).map(([k, v]) => (
               <SelectItem key={k} value={k}>{v.label[locale as 'fr' | 'en']}</SelectItem>
             ))}
           </SelectContent>
         </Select>
         <Button onClick={() => setUploadOpen(true)} className="bg-primary text-primary-foreground h-11">
-          <Upload className="w-4 h-4" /> {locale === 'fr' ? 'Téléverser' : 'Upload'}
+          <Upload className="w-4 h-4" /> {t.documents.upload}
         </Button>
       </div>
 
@@ -100,9 +100,9 @@ export function DocumentsView({ locale }: { locale: Locale }) {
       ) : filtered.length === 0 ? (
         <EmptyState
           icon={FileText}
-          title={locale === 'fr' ? 'Aucun document' : 'No documents'}
-          description={locale === 'fr' ? 'Téléversez un document patient ou ajustez les filtres.' : 'Upload a patient document or adjust filters.'}
-          action={{ label: locale === 'fr' ? 'Téléverser' : 'Upload', onClick: () => setUploadOpen(true) }}
+          title={t.documents.noDocuments}
+          description={t.documents.noDocumentsDesc}
+          action={{ label: t.documents.upload, onClick: () => setUploadOpen(true) }}
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -169,6 +169,7 @@ export function DocumentsView({ locale }: { locale: Locale }) {
 }
 
 function UploadDialog({ open, onOpenChange, locale, patients, onSuccess }: any) {
+  const t = getDict(locale)
   const [patientId, setPatientId] = useState('')
   const [category, setCategory] = useState('lab_report')
   const [description, setDescription] = useState('')
@@ -183,7 +184,7 @@ function UploadDialog({ open, onOpenChange, locale, patients, onSuccess }: any) 
 
   const handleUpload = async () => {
     if (!patientId || !file) {
-      toast.error(locale === 'fr' ? 'Patient et fichier requis' : 'Patient and file required')
+      toast.error(t.documents.patientFileRequiredToast)
       return
     }
     setUploading(true)
@@ -207,7 +208,7 @@ function UploadDialog({ open, onOpenChange, locale, patients, onSuccess }: any) 
           }),
         })
         if (!res.ok) throw new Error('Upload failed')
-        toast.success(locale === 'fr' ? 'Document téléversé' : 'Document uploaded')
+        toast.success(t.documents.uploadedToast)
         onSuccess()
         onOpenChange(false)
         setFile(null)
@@ -231,11 +232,11 @@ function UploadDialog({ open, onOpenChange, locale, patients, onSuccess }: any) 
       >
         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
           <Upload className="w-5 h-5 text-primary" />
-          {locale === 'fr' ? 'Téléverser un document' : 'Upload document'}
+          {t.documents.uploadTitle}
         </h3>
         <div className="space-y-3">
           <div>
-            <label className="text-xs font-medium text-muted-foreground">{locale === 'fr' ? 'Patient' : 'Patient'}</label>
+            <label className="text-xs font-medium text-muted-foreground">{t.billing.patient}</label>
             <select
               value={patientId}
               onChange={(e) => setPatientId(e.target.value)}
@@ -248,7 +249,7 @@ function UploadDialog({ open, onOpenChange, locale, patients, onSuccess }: any) 
             </select>
           </div>
           <div>
-            <label className="text-xs font-medium text-muted-foreground">{locale === 'fr' ? 'Catégorie' : 'Category'}</label>
+            <label className="text-xs font-medium text-muted-foreground">{t.documents.category}</label>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
@@ -260,7 +261,7 @@ function UploadDialog({ open, onOpenChange, locale, patients, onSuccess }: any) 
             </select>
           </div>
           <div>
-            <label className="text-xs font-medium text-muted-foreground">{locale === 'fr' ? 'Fichier' : 'File'}</label>
+            <label className="text-xs font-medium text-muted-foreground">{t.documents.file}</label>
             <input
               ref={fileInputRef}
               type="file"
@@ -274,7 +275,7 @@ function UploadDialog({ open, onOpenChange, locale, patients, onSuccess }: any) 
             )}
           </div>
           <div>
-            <label className="text-xs font-medium text-muted-foreground">{locale === 'fr' ? 'Description' : 'Description'}</label>
+            <label className="text-xs font-medium text-muted-foreground">{t.documents.description}</label>
             <Input
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -284,10 +285,10 @@ function UploadDialog({ open, onOpenChange, locale, patients, onSuccess }: any) 
           </div>
         </div>
         <div className="flex gap-2 mt-4 justify-end">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>{locale === 'fr' ? 'Annuler' : 'Cancel'}</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>{t.common.cancel}</Button>
           <Button onClick={handleUpload} disabled={uploading || !file || !patientId}>
             {uploading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            {locale === 'fr' ? 'Téléverser' : 'Upload'}
+            {t.documents.upload}
           </Button>
         </div>
       </motion.div>

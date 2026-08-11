@@ -66,7 +66,7 @@ export function VitalsChart({ vitals, locale }: VitalsChartProps) {
         <div className="flex items-center gap-2">
           <Activity className="w-4 h-4 text-primary" />
           <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            {locale === 'fr' ? 'Tendance des constantes' : 'Vitals Trend'}
+            {t.patients.vitalsTrend}
           </h4>
         </div>
         <div className="flex items-center gap-3 text-[10px]">

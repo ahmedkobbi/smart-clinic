@@ -74,10 +74,10 @@ export function LabsView({ locale }: { locale: Locale }) {
     <div className="p-4 md:p-6 space-y-4 pb-24">
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard label={locale === 'fr' ? 'Total résultats' : 'Total results'} value={stats.total} icon={FlaskConical} accent="primary" delay={0} />
-        <StatCard label={locale === 'fr' ? 'Normaux' : 'Normal'} value={stats.normal} icon={Activity} accent="success" delay={50} />
-        <StatCard label={locale === 'fr' ? 'Anormaux' : 'Abnormal'} value={stats.abnormal} icon={TrendingUp} accent="warning" delay={100} />
-        <StatCard label={locale === 'fr' ? 'Critiques' : 'Critical'} value={stats.critical} icon={AlertTriangle} accent="warning" delay={150} />
+        <StatCard label={t.labs.totalResults} value={stats.total} icon={FlaskConical} accent="primary" delay={0} />
+        <StatCard label={t.labs.normal} value={stats.normal} icon={Activity} accent="success" delay={50} />
+        <StatCard label={t.labs.abnormal} value={stats.abnormal} icon={TrendingUp} accent="warning" delay={100} />
+        <StatCard label={t.labs.critical} value={stats.critical} icon={AlertTriangle} accent="warning" delay={150} />
       </div>
 
       {/* Filters */}
@@ -87,7 +87,7 @@ export function LabsView({ locale }: { locale: Locale }) {
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder={locale === 'fr' ? 'Rechercher (test, patient)…' : 'Search (test, patient)…'}
+            placeholder={t.labs.searchPlaceholder}
             className="pl-10 glass-base border-0 h-11"
           />
         </div>
@@ -96,7 +96,7 @@ export function LabsView({ locale }: { locale: Locale }) {
             <SelectValue />
           </SelectTrigger>
           <SelectContent className="glass-floating">
-            <SelectItem value="all">{locale === 'fr' ? 'Toutes catégories' : 'All categories'}</SelectItem>
+            <SelectItem value="all">{t.common.allCategories}</SelectItem>
             {Object.entries(CATEGORY_LABELS).map(([k, v]) => (
               <SelectItem key={k} value={k}>{v[locale as 'fr' | 'en']}</SelectItem>
             ))}
@@ -107,19 +107,19 @@ export function LabsView({ locale }: { locale: Locale }) {
           className={`px-4 h-11 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${abnormalOnly ? 'bg-destructive text-destructive-foreground' : 'glass-base'}`}
         >
           <AlertTriangle className="w-4 h-4" />
-          {locale === 'fr' ? 'Anormaux uniquement' : 'Abnormal only'}
+          {t.labs.abnormalOnly}
         </button>
       </div>
 
       {/* Lab results table */}
       <div className="glass-card rounded-2xl overflow-hidden">
         <div className="grid grid-cols-12 gap-3 px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground border-b border-border/40">
-          <div className="col-span-3">{locale === 'fr' ? 'Test' : 'Test'}</div>
-          <div className="col-span-2">{locale === 'fr' ? 'Patient' : 'Patient'}</div>
-          <div className="col-span-2 text-right">{locale === 'fr' ? 'Valeur' : 'Value'}</div>
-          <div className="col-span-2 hidden md:block">{locale === 'fr' ? 'Référence' : 'Reference'}</div>
-          <div className="col-span-2 hidden md:block">{locale === 'fr' ? 'Date' : 'Date'}</div>
-          <div className="col-span-3 md:col-span-1 text-right">{locale === 'fr' ? 'Statut' : 'Flag'}</div>
+          <div className="col-span-3">{t.labs.test}</div>
+          <div className="col-span-2">{t.billing.patient}</div>
+          <div className="col-span-2 text-right">{t.common.value}</div>
+          <div className="col-span-2 hidden md:block">{t.labs.reference}</div>
+          <div className="col-span-2 hidden md:block">{t.common.date}</div>
+          <div className="col-span-3 md:col-span-1 text-right">{t.labs.flag}</div>
         </div>
         <ScrollArea className="h-[55vh]">
           {isLoading ? (
@@ -127,8 +127,8 @@ export function LabsView({ locale }: { locale: Locale }) {
           ) : filtered.length === 0 ? (
             <EmptyState
               icon={FlaskConical}
-              title={locale === 'fr' ? 'Aucun résultat' : 'No results'}
-              description={locale === 'fr' ? 'Aucun résultat labo ne correspond aux filtres.' : 'No lab results match the filters.'}
+              title={t.labs.noResultsTitle}
+              description={t.labs.noResultsDesc}
             />
           ) : (
             filtered.map((r: any, i: number) => {

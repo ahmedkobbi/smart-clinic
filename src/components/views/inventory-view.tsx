@@ -63,7 +63,7 @@ export function InventoryView({ locale }: { locale: Locale }) {
     <div className="p-4 md:p-6 space-y-4 pb-24">
       {/* Summary */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <SummaryCard label={locale === 'fr' ? 'Articles' : 'Items'} value={String(data?.items?.length || 0)} icon={Package} variant="primary" />
+        <SummaryCard label={t.inventory.items} value={String(data?.items?.length || 0)} icon={Package} variant="primary" />
         <SummaryCard label={t.inventory.lowStock} value={String(lowStock.length)} icon={AlertTriangle} variant={lowStock.length > 0 ? 'danger' : 'success'} />
         <SummaryCard label={t.inventory.expiringSoon} value={String(expiringSoon.length)} icon={Calendar} variant={expiringSoon.length > 0 ? 'warning' : 'success'} />
         <SummaryCard label={t.inventory.totalValue} value={formatCurrency(totalValue, locale)} icon={DollarSign} variant="success" />
@@ -74,7 +74,7 @@ export function InventoryView({ locale }: { locale: Locale }) {
         <Input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder={locale === 'fr' ? 'Rechercher un article…' : 'Search item…'}
+          placeholder={t.inventory.searchPlaceholder}
           className="glass-base border-0 md:flex-1"
         />
         <Select value={category} onValueChange={setCategory}>
@@ -82,7 +82,7 @@ export function InventoryView({ locale }: { locale: Locale }) {
             <SelectValue />
           </SelectTrigger>
           <SelectContent className="glass-floating">
-            <SelectItem value="all">{locale === 'fr' ? 'Toutes catégories' : 'All categories'}</SelectItem>
+            <SelectItem value="all">{t.common.allCategories}</SelectItem>
             <SelectItem value="consumable">{t.inventory.categories.consumable}</SelectItem>
             <SelectItem value="medication">{t.inventory.categories.medication}</SelectItem>
             <SelectItem value="equipment">{t.inventory.categories.equipment}</SelectItem>

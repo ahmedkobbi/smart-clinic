@@ -71,7 +71,7 @@ export function TriageView({ locale }: { locale: Locale }) {
 
   const handleTriage = async () => {
     if (!symptoms.trim()) {
-      toast.error(locale === 'fr' ? 'Décrivez vos symptômes' : 'Describe your symptoms')
+      toast.error(t.triage.describeSymptomsToast)
       return
     }
     setLoading(true)
@@ -114,15 +114,13 @@ export function TriageView({ locale }: { locale: Locale }) {
           </div>
           <div>
             <h2 className="text-lg font-semibold flex items-center gap-2">
-              {locale === 'fr' ? 'Pré-triage intelligent' : 'AI Pre-triage'}
+              {t.triage.title}
               <span className="status-pill text-glass-accent text-[10px]">
                 <Sparkles className="w-3 h-3" /> {t.ai.badge}
               </span>
             </h2>
             <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-              {locale === 'fr'
-                ? 'Décrivez vos symptômes — l\'IA vous orientera vers le bon type de rendez-vous. Non diagnostique, non substituable à un avis médical.'
-                : 'Describe your symptoms — AI will route you to the right appointment type. Non-diagnostic, not a substitute for medical advice.'}
+              {t.triage.intro}
             </p>
           </div>
         </div>
@@ -138,7 +136,7 @@ export function TriageView({ locale }: { locale: Locale }) {
         >
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label>{locale === 'fr' ? 'Âge' : 'Age'}</Label>
+              <Label>{t.patients.age}</Label>
               <Input
                 type="number"
                 value={age}
@@ -148,7 +146,7 @@ export function TriageView({ locale }: { locale: Locale }) {
               />
             </div>
             <div className="space-y-1.5">
-              <Label>{locale === 'fr' ? 'Sexe' : 'Sex'}</Label>
+              <Label>{t.patients.sex}</Label>
               <Input
                 value={sex}
                 onChange={(e) => setSex(e.target.value)}
@@ -159,14 +157,12 @@ export function TriageView({ locale }: { locale: Locale }) {
           </div>
 
           <div className="space-y-1.5">
-            <Label>{locale === 'fr' ? 'Symptômes' : 'Symptoms'}</Label>
+            <Label>{t.triage.symptoms}</Label>
             <Textarea
               rows={5}
               value={symptoms}
               onChange={(e) => setSymptoms(e.target.value)}
-              placeholder={locale === 'fr'
-                ? 'Décrivez vos symptômes en détail: depuis quand, intensité, facteurs aggravants...'
-                : 'Describe your symptoms in detail: since when, intensity, aggravating factors...'}
+              placeholder={t.triage.symptomsPlaceholder}
               className="glass-base border-0 resize-none"
             />
           </div>
@@ -174,7 +170,7 @@ export function TriageView({ locale }: { locale: Locale }) {
           {/* Suggested symptoms */}
           <div>
             <p className="text-[10px] uppercase font-semibold text-muted-foreground mb-1.5">
-              {locale === 'fr' ? 'Exemples:' : 'Examples:'}
+              {t.common.examples}
             </p>
             <div className="flex flex-wrap gap-1.5">
               {SUGGESTED_SYMPTOMS.map((s, i) => (
@@ -197,12 +193,12 @@ export function TriageView({ locale }: { locale: Locale }) {
             {loading ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                {locale === 'fr' ? 'Analyse en cours...' : 'Analyzing...'}
+                {t.triage.analyzing}
               </>
             ) : (
               <>
                 <Sparkles className="w-4 h-4 mr-2" />
-                {locale === 'fr' ? 'Lancer le pré-triage' : 'Run pre-triage'}
+                {t.triage.run}
               </>
             )}
           </Button>
@@ -218,8 +214,8 @@ export function TriageView({ locale }: { locale: Locale }) {
           {!result && !loading && (
             <EmptyState
               icon={Activity}
-              title={locale === 'fr' ? 'En attente d\'analyse' : 'Awaiting analysis'}
-              description={locale === 'fr' ? 'Le résultat du pré-triage apparaîtra ici.' : 'Pre-triage result will appear here.'}
+              title={t.triage.awaitingTitle}
+              description={t.triage.awaitingDesc}
             />
           )}
           {loading && (
@@ -227,7 +223,7 @@ export function TriageView({ locale }: { locale: Locale }) {
               <div className="w-12 h-12 rounded-xl glass-raised flex items-center justify-center mb-3 animate-pulse-glow">
                 <Sparkles className="w-6 h-6 text-glass-accent animate-pulse" />
               </div>
-              <p className="text-sm text-muted-foreground">{locale === 'fr' ? 'L\'IA analyse vos symptômes...' : 'AI is analyzing your symptoms...'}</p>
+              <p className="text-sm text-muted-foreground">{t.triage.analyzingDesc}</p>
             </div>
           )}
           {result && (
@@ -240,6 +236,7 @@ export function TriageView({ locale }: { locale: Locale }) {
 }
 
 function TriageResultDisplay({ result, locale, onBookAppointment }: { result: TriageResult; locale: Locale; onBookAppointment: () => void }) {
+  const t = getDict(locale)
   const config = URGENCY_CONFIG[result.urgencyLevel]
   const Icon = config.icon
 
@@ -257,7 +254,7 @@ function TriageResultDisplay({ result, locale, onBookAppointment }: { result: Tr
           <Icon className="w-8 h-8 shrink-0" />
           <div>
             <p className="text-[10px] uppercase font-semibold opacity-70">
-              {locale === 'fr' ? 'Niveau d\'urgence' : 'Urgency level'}
+              {t.triage.urgencyLevel}
             </p>
             <p className="text-lg font-bold">{config.label[locale as 'fr' | 'en']}</p>
           </div>
@@ -266,7 +263,7 @@ function TriageResultDisplay({ result, locale, onBookAppointment }: { result: Tr
         {/* Recommended action */}
         <div className="p-3 rounded-lg glass-base">
           <p className="text-[10px] uppercase font-semibold text-muted-foreground mb-1">
-            {locale === 'fr' ? 'Action recommandée' : 'Recommended action'}
+            {t.triage.recommendedAction}
           </p>
           <p className="text-sm">{result.recommendedAction}</p>
         </div>
@@ -275,13 +272,13 @@ function TriageResultDisplay({ result, locale, onBookAppointment }: { result: Tr
         <div className="grid grid-cols-2 gap-2">
           <div className="p-3 rounded-lg glass-base">
             <p className="text-[10px] uppercase font-semibold text-muted-foreground mb-1">
-              {locale === 'fr' ? 'Spécialité' : 'Specialty'}
+              {t.triage.specialty}
             </p>
             <p className="text-sm font-medium">{result.recommendedSpecialty}</p>
           </div>
           <div className="p-3 rounded-lg glass-base">
             <p className="text-[10px] uppercase font-semibold text-muted-foreground mb-1">
-              {locale === 'fr' ? 'Délai' : 'Timeframe'}
+              {t.triage.timeframe}
             </p>
             <p className="text-sm font-medium">{result.suggestedTimeframe}</p>
           </div>
@@ -291,7 +288,7 @@ function TriageResultDisplay({ result, locale, onBookAppointment }: { result: Tr
         {result.recommendation && (
           <div className="p-3 rounded-lg glass-base">
             <p className="text-[10px] uppercase font-semibold text-muted-foreground mb-1">
-              {locale === 'fr' ? 'Recommandation' : 'Recommendation'}
+              {t.triage.recommendation}
             </p>
             <p className="text-xs leading-relaxed">{result.recommendation}</p>
           </div>
@@ -302,7 +299,7 @@ function TriageResultDisplay({ result, locale, onBookAppointment }: { result: Tr
           <div className="p-3 rounded-lg bg-destructive/5 border border-destructive/20">
             <p className="text-[10px] uppercase font-semibold text-destructive mb-2 flex items-center gap-1">
               <AlertTriangle className="w-3 h-3" />
-              {locale === 'fr' ? 'Signaux d\'alerte' : 'Red flags'}
+              {t.triage.redFlags}
             </p>
             <ul className="space-y-1">
               {result.redFlags.map((flag, i) => (
@@ -321,7 +318,7 @@ function TriageResultDisplay({ result, locale, onBookAppointment }: { result: Tr
             onClick={onBookAppointment}
             className="w-full bg-primary text-primary-foreground hover:opacity-90"
           >
-            {locale === 'fr' ? 'Prendre rendez-vous' : 'Book appointment'}
+            {t.triage.bookAppointment}
           </Button>
         )}
 

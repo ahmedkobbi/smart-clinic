@@ -120,8 +120,8 @@ export function Sidebar({ locale, session }: { locale: Locale; session: Session 
               <Crown className="w-3.5 h-3.5 text-glass-warm" />
             </div>
             <div className="text-left flex-1">
-              <p className="text-glass-warm font-medium">{locale === 'fr' ? 'Console Propriétaire' : 'Owner Console'}</p>
-              <p className="text-[10px] text-muted-foreground">{locale === 'fr' ? 'Licences & contrôle' : 'Licenses & control'}</p>
+              <p className="text-glass-warm font-medium">{t.admin.console}</p>
+              <p className="text-[10px] text-muted-foreground">{t.admin.licensing}</p>
             </div>
           </button>
         )}

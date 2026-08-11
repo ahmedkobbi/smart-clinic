@@ -185,7 +185,7 @@ export function SettingsView({ locale }: { locale: Locale }) {
                       <Badge variant="outline" className="text-[10px]">{r.type}</Badge>
                     </div>
                     <p className="text-[10px] text-muted-foreground">
-                      {r.branch?.name} · {locale === 'fr' ? 'capacité' : 'capacity'} {r.capacity}
+                      {r.branch?.name} · {t.settings.capacity} {r.capacity}
                     </p>
                   </div>
                 ))}
@@ -216,7 +216,7 @@ export function SettingsView({ locale }: { locale: Locale }) {
                     )}
                   >
                     <p className="text-sm font-medium">{t.settings.densityComfortable}</p>
-                    <p className="text-[10px] text-muted-foreground">{locale === 'fr' ? 'Plus d\'espacement, idéal tablette' : 'More spacing, tablet-friendly'}</p>
+                    <p className="text-[10px] text-muted-foreground">{t.settings.densityComfortableDesc}</p>
                   </button>
                   <button
                     onClick={() => setDensity('compact')}
@@ -226,7 +226,7 @@ export function SettingsView({ locale }: { locale: Locale }) {
                     )}
                   >
                     <p className="text-sm font-medium">{t.settings.densityCompact}</p>
-                    <p className="text-[10px] text-muted-foreground">{locale === 'fr' ? 'Dense, back-office clinicien' : 'Dense, clinician back-office'}</p>
+                    <p className="text-[10px] text-muted-foreground">{t.settings.densityCompactDesc}</p>
                   </button>
                 </div>
               </div>
@@ -276,7 +276,7 @@ export function SettingsView({ locale }: { locale: Locale }) {
                     onClick={() => setLocale('fr')}
                     className={cn(
                       "p-3 rounded-lg border-2 text-left transition-colors flex items-center gap-2",
-                      locale === 'fr' ? "border-primary bg-primary/5" : "border-border glass-base"
+                      locale !== 'en' ? "border-primary bg-primary/5" : "border-border glass-base"
                     )}
                   >
                     <span className="text-xl">🇫🇷</span>
@@ -284,7 +284,7 @@ export function SettingsView({ locale }: { locale: Locale }) {
                       <p className="text-sm font-medium">Français</p>
                       <p className="text-[10px] text-muted-foreground">FR</p>
                     </div>
-                    {locale === 'fr' && <Check className="w-4 h-4 text-primary ml-auto" />}
+                    {locale !== 'en' && <Check className="w-4 h-4 text-primary ml-auto" />}
                   </button>
                   <button
                     onClick={() => setLocale('en')}
@@ -302,7 +302,7 @@ export function SettingsView({ locale }: { locale: Locale }) {
                   </button>
                 </div>
                 <p className="text-[10px] text-muted-foreground mt-2">
-                  {locale === 'fr' ? 'AR · ES · NL · DE sur feuille de route' : 'AR · ES · NL · DE on roadmap'}
+                  {t.settings.languagesRoadmap}
                 </p>
               </div>
             </CardContent>
@@ -311,7 +311,7 @@ export function SettingsView({ locale }: { locale: Locale }) {
           {/* Compliance card */}
           <Card className="glass-card">
             <CardHeader>
-              <CardTitle className="text-base">{locale === 'fr' ? 'Conformité & Sécurité' : 'Compliance & Security'}</CardTitle>
+              <CardTitle className="text-base">{t.settings.complianceTitle}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
@@ -323,9 +323,7 @@ export function SettingsView({ locale }: { locale: Locale }) {
                 ))}
               </div>
               <p className="text-[10px] text-muted-foreground mt-3">
-                {locale === 'fr'
-                  ? 'Cibles de conformité engineering — certifications à valider avant mise en production.'
-                  : 'Engineering compliance targets — certifications to validate before go-live.'}
+                {t.settings.complianceDesc}
               </p>
             </CardContent>
           </Card>

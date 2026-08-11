@@ -111,8 +111,8 @@ export function AppointmentsView({ locale }: { locale: Locale }) {
           <div className="ml-2">
             <p className="text-sm font-semibold capitalize">
               {viewMode === 'day'
-                ? currentDate.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
-                : `${weekDays[0].toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short' })} — ${weekDays[6].toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short', year: 'numeric' })}`}
+                ? currentDate.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+                : `${weekDays[0].toLocaleDateString(locale, { day: 'numeric', month: 'short' })} — ${weekDays[6].toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' })}`}
             </p>
             {isToday && <p className="text-[11px] text-success">● {t.appointments.today}</p>}
           </div>
@@ -160,7 +160,7 @@ export function AppointmentsView({ locale }: { locale: Locale }) {
 
       {/* Legend */}
       <div className="glass-base rounded-xl p-3 flex flex-wrap items-center gap-3 text-[11px]">
-        <span className="font-semibold text-muted-foreground">{locale === 'fr' ? 'Légende:' : 'Legend:'}</span>
+        <span className="font-semibold text-muted-foreground">{t.common.legend}</span>
         <span className="flex items-center gap-1"><span className="status-pill text-success">{t.appointments.status.completed}</span></span>
         <span className="flex items-center gap-1"><span className="status-pill text-info">{t.appointments.status.checked_in}</span></span>
         <span className="flex items-center gap-1"><span className="status-pill text-warning">{t.appointments.status.confirmed}</span></span>
@@ -248,7 +248,7 @@ function WeekView({ weekDays, apptsByDay, isLoading, locale, t, onPatientClick }
                   {/* Day header */}
                   <div className={`p-2 border-b border-border/30 text-center ${isToday ? 'bg-primary/10' : ''}`}>
                     <p className="text-[10px] uppercase font-semibold text-muted-foreground">
-                      {day.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { weekday: 'short' })}
+                      {day.toLocaleDateString(locale, { weekday: 'short' })}
                     </p>
                     <p className={`text-sm font-mono ${isToday ? 'text-primary font-bold' : ''}`}>
                       {day.getDate()}
@@ -300,7 +300,7 @@ function ApptRow({ appt, locale, t, onPatientClick, onStatusChange }: any) {
         const err = await res.json()
         throw new Error(err.error || 'Failed')
       }
-      toast.success(locale === 'fr' ? `Statut → ${t.appointments.status[newStatus as keyof typeof t.appointments.status]}` : `Status → ${newStatus}`)
+      toast.success(`${t.common.status} → ${t.appointments.status[newStatus as keyof typeof t.appointments.status]}`)
       onStatusChange()
     } catch (e) {
       toast.error((e as Error).message)

@@ -47,7 +47,7 @@ export function PatientForm({ open, onOpenChange, locale }: { open: boolean; onO
 
   const handleSubmit = async () => {
     if (!form.firstName || !form.lastName) {
-      toast.error(locale === 'fr' ? 'Nom et prénom requis' : 'First and last name required')
+      toast.error(t.patients.nameRequiredToast)
       return
     }
     setSubmitting(true)
@@ -69,7 +69,7 @@ export function PatientForm({ open, onOpenChange, locale }: { open: boolean; onO
         throw new Error(err.error || 'Failed')
       }
       const patient = await res.json()
-      toast.success(`${locale === 'fr' ? 'Patient créé' : 'Patient created'}: ${patient.firstName} ${patient.lastName}`)
+      toast.success(`${t.patients.createdToast}: ${patient.firstName} ${patient.lastName}`)
       qc.invalidateQueries({ queryKey: ['patients'] })
       qc.invalidateQueries({ queryKey: ['dashboard'] })
       onOpenChange(false)
@@ -103,11 +103,11 @@ export function PatientForm({ open, onOpenChange, locale }: { open: boolean; onO
             <Input id="firstName" value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="lastName">{locale === 'fr' ? 'Nom' : 'Last name'} *</Label>
+            <Label htmlFor="lastName">{t.patients.lastName} *</Label>
             <Input id="lastName" value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="birthDate">{locale === 'fr' ? 'Date de naissance' : 'Birth date'}</Label>
+            <Label htmlFor="birthDate">{t.patients.birthDate}</Label>
             <Input id="birthDate" type="date" value={form.birthDate} onChange={(e) => setForm({ ...form, birthDate: e.target.value })} />
           </div>
           <div className="space-y-1.5">
@@ -115,10 +115,10 @@ export function PatientForm({ open, onOpenChange, locale }: { open: boolean; onO
             <Select value={form.sex} onValueChange={(v) => setForm({ ...form, sex: v as any })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent className="glass-floating">
-                <SelectItem value="male">{locale === 'fr' ? 'Homme' : 'Male'}</SelectItem>
-                <SelectItem value="female">{locale === 'fr' ? 'Femme' : 'Female'}</SelectItem>
-                <SelectItem value="other">{locale === 'fr' ? 'Autre' : 'Other'}</SelectItem>
-                <SelectItem value="unknown">{locale === 'fr' ? 'Inconnu' : 'Unknown'}</SelectItem>
+                <SelectItem value="male">{t.patients.sexes.male}</SelectItem>
+                <SelectItem value="female">{t.patients.sexes.female}</SelectItem>
+                <SelectItem value="other">{t.patients.sexes.other}</SelectItem>
+                <SelectItem value="unknown">{t.patients.sexes.unknown}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -170,9 +170,9 @@ export function PatientForm({ open, onOpenChange, locale }: { open: boolean; onO
             <Input id="weight" type="number" step="0.1" value={form.weightKg} onChange={(e) => setForm({ ...form, weightKg: e.target.value })} />
           </div>
           <div className="space-y-1.5 col-span-2">
-            <Label>{locale === 'fr' ? 'Site' : 'Branch'}</Label>
+            <Label>{t.patients.branch}</Label>
             <Select value={form.branchId} onValueChange={(v) => setForm({ ...form, branchId: v })}>
-              <SelectTrigger><SelectValue placeholder={locale === 'fr' ? 'Sélectionner' : 'Select'} /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder={t.common.select} /></SelectTrigger>
               <SelectContent className="glass-floating">
                 {(branchesData?.branches || []).map((b: any) => (
                   <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>

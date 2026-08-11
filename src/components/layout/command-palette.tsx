@@ -1,7 +1,7 @@
 'use client'
 
 import { useApp } from '@/lib/store'
-import { getDict, type Locale } from '@/lib/i18n'
+import { getDict, otherLocale, type Locale } from '@/lib/i18n'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { useEffect, useState, useMemo } from 'react'
@@ -105,7 +105,7 @@ export function CommandPalette({ locale }: { locale: Locale }) {
 
   const settingItems: CommandItem[] = useMemo(() => [
     { id: 'set-theme', label: t.command.actions.toggleTheme, group: t.command.groups.settings, icon: theme === 'dark' ? Sun : Moon, action: () => { toggleTheme(); setCommandOpen(false) } },
-    { id: 'set-lang', label: t.command.actions.toggleLanguage, group: t.command.groups.settings, icon: Globe, action: () => { setLocale(locale === 'fr' ? 'en' : 'fr'); setCommandOpen(false) } },
+    { id: 'set-lang', label: t.command.actions.toggleLanguage, group: t.command.groups.settings, icon: Globe, action: () => { setLocale(otherLocale(locale)); setCommandOpen(false) } },
     { id: 'set-open', label: t.command.actions.openSettings, group: t.command.groups.settings, icon: Settings, action: () => { setView('settings'); setCommandOpen(false) } },
   ], [t, theme, locale, setView, setLocale, toggleTheme, setCommandOpen])
 
@@ -126,7 +126,7 @@ export function CommandPalette({ locale }: { locale: Locale }) {
       items.push({
         id: `data-invoice-${inv.id}`,
         label: `${inv.number} — ${inv.patient.firstName} ${inv.patient.lastName}`,
-        group: locale === 'fr' ? 'Factures' : 'Invoices',
+        group: t.command.invoicesGroup,
         icon: Hash,
         action: () => { setSelectedPatientId(inv.patientId); setView('billing'); setCommandOpen(false) },
         hint: `${inv.total.toFixed(2)} €`,
@@ -136,7 +136,7 @@ export function CommandPalette({ locale }: { locale: Locale }) {
       items.push({
         id: `data-appt-${appt.id}`,
         label: `${appt.patient.firstName} ${appt.patient.lastName} — ${appt.reason || 'Consultation'}`,
-        group: locale === 'fr' ? 'Rendez-vous' : 'Appointments',
+        group: t.command.appointmentsGroup,
         icon: Calendar,
         action: () => { setSelectedPatientId(appt.patientId); setView('appointments'); setCommandOpen(false) },
         hint: appt.practitioner.name,
@@ -173,7 +173,7 @@ export function CommandPalette({ locale }: { locale: Locale }) {
           setQuery('')
         }
       } else {
-        toast.info(locale === 'fr' ? 'Commande analysée — voir détails' : 'Command parsed — see details')
+        toast.info(t.command.commandParsedToast)
       }
     } catch (e) {
       toast.error((e as Error).message)
@@ -222,7 +222,7 @@ export function CommandPalette({ locale }: { locale: Locale }) {
           {isNLCommand && (
             <div className="mb-2">
               <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                {locale === 'fr' ? 'Commande naturelle' : 'Natural language'}
+                {t.command.naturalLanguage}
               </p>
               <button
                 onClick={executeNLCommand}
@@ -236,8 +236,8 @@ export function CommandPalette({ locale }: { locale: Locale }) {
                   <p className="text-sm font-medium truncate">"{query}"</p>
                   <p className="text-[10px] text-muted-foreground">
                     {nlExecuting
-                      ? (locale === 'fr' ? 'Exécution…' : 'Executing…')
-                      : (locale === 'fr' ? 'Exécuter cette commande' : 'Execute this command')}
+                      ? t.command.executing
+                      : t.command.executeCommand}
                   </p>
                 </div>
                 <CornerDownRight className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />

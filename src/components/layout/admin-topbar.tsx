@@ -1,7 +1,7 @@
 'use client'
 
 import { useApp } from '@/lib/store'
-import { type Locale, getDict } from '@/lib/i18n'
+import { type Locale, getDict, otherLocale } from '@/lib/i18n'
 import { type Session } from 'next-auth/react'
 import {
   Search, Command, Globe, Moon, Sun, ChevronRight,
@@ -47,7 +47,7 @@ export function AdminTopBar({ locale, session }: { locale: Locale; session: Sess
         {/* Date */}
         <div className="flex-1 min-w-0 ml-2">
           <h2 className="text-base font-semibold leading-tight truncate hidden md:block">
-            {now.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { weekday: 'long', day: 'numeric', month: 'long' })}
+            {now.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' })}
           </h2>
         </div>
 
@@ -57,7 +57,7 @@ export function AdminTopBar({ locale, session }: { locale: Locale; session: Sess
           className="hidden md:flex items-center gap-2 px-3 py-2 rounded-lg glass-button text-sm text-muted-foreground hover:text-foreground min-w-[260px]"
         >
           <Search className="w-4 h-4" />
-          <span className="flex-1 text-left">{locale === 'fr' ? 'Rechercher…' : 'Search…'}</span>
+          <span className="flex-1 text-left">{t.nav.search}</span>
           <kbd className="hidden lg:inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-mono rounded bg-muted border border-border">
             <Command className="w-3 h-3" /> K
           </kbd>
@@ -67,13 +67,13 @@ export function AdminTopBar({ locale, session }: { locale: Locale; session: Sess
           <Tooltip>
             <TooltipTrigger asChild>
               <button
-                onClick={() => setLocale(locale === 'fr' ? 'en' : 'fr')}
+                onClick={() => setLocale(otherLocale(locale))}
                 className="p-2 rounded-lg glass-button text-foreground/70 hover:text-foreground"
               >
                 <Globe className="w-4 h-4" />
               </button>
             </TooltipTrigger>
-            <TooltipContent>{locale === 'fr' ? 'English' : 'Français'}</TooltipContent>
+            <TooltipContent>{t.common.otherLanguageName}</TooltipContent>
           </Tooltip>
         </TooltipProvider>
 

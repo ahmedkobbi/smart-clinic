@@ -1,7 +1,7 @@
 'use client'
 
 import { useApp, type ViewKey } from '@/lib/store'
-import { getDict, type Locale } from '@/lib/i18n'
+import { getDict, otherLocale, type Locale } from '@/lib/i18n'
 import { motion, AnimatePresence } from 'framer-motion'
 import { type Session } from 'next-auth/react'
 import {
@@ -96,7 +96,7 @@ export function TopBar({ locale, session }: { locale: Locale; session: Session |
         {/* Page title */}
         <div className="flex-1 min-w-0 ml-2">
           <h2 className="text-base font-semibold leading-tight truncate hidden md:block">
-            {now.toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { weekday: 'long', day: 'numeric', month: 'long' })}
+            {now.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' })}
           </h2>
         </div>
 
@@ -117,14 +117,14 @@ export function TopBar({ locale, session }: { locale: Locale; session: Session |
           <Tooltip>
             <TooltipTrigger asChild>
               <button
-                onClick={() => setLocale(locale === 'fr' ? 'en' : 'fr')}
+                onClick={() => setLocale(otherLocale(locale))}
                 className="p-2 rounded-lg glass-button text-foreground/70 hover:text-foreground"
                 aria-label="Toggle language"
               >
                 <Globe className="w-4 h-4" />
               </button>
             </TooltipTrigger>
-            <TooltipContent>{locale === 'fr' ? 'Switch to English' : 'Passer en français'}</TooltipContent>
+            <TooltipContent>{t.common.switchToOtherLanguage}</TooltipContent>
           </Tooltip>
         </TooltipProvider>
 
@@ -160,14 +160,14 @@ export function TopBar({ locale, session }: { locale: Locale; session: Session |
           </PopoverTrigger>
           <PopoverContent className="glass-floating p-0 w-80 max-h-[400px] overflow-hidden" align="end">
             <div className="px-4 py-3 border-b border-border/40 flex items-center justify-between">
-              <h3 className="text-sm font-semibold">{locale === 'fr' ? 'Notifications' : 'Notifications'}</h3>
+              <h3 className="text-sm font-semibold">{t.common.notifications}</h3>
               <span className="text-[10px] text-muted-foreground">{notifications.length}</span>
             </div>
             <div className="max-h-[320px] overflow-y-auto scroll-area-glass">
               {notifications.length === 0 ? (
                 <div className="p-6 text-center text-sm text-muted-foreground">
                   <CheckCircle2 className="w-8 h-8 mx-auto mb-2 text-success" />
-                  {locale === 'fr' ? 'Aucune notification' : 'No notifications'}
+                  {t.common.noNotifications}
                 </div>
               ) : (
                 notifications.map((n, i) => {
@@ -188,7 +188,7 @@ export function TopBar({ locale, session }: { locale: Locale; session: Session |
                         <p className="text-xs font-medium truncate">{n.title}</p>
                         <p className="text-[11px] text-muted-foreground line-clamp-2">{n.description}</p>
                         <p className="text-[10px] text-muted-foreground mt-1 font-mono">
-                          {new Date(n.timestamp).toLocaleString(locale === 'fr' ? 'fr-FR' : 'en-US')}
+                          {new Date(n.timestamp).toLocaleString(locale)}
                         </p>
                       </div>
                       {n.severity === 'critical' && (
@@ -235,7 +235,7 @@ export function TopBar({ locale, session }: { locale: Locale; session: Session |
               className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-destructive hover:bg-destructive/10 transition-colors"
             >
               <LogOut className="w-4 h-4" />
-              {locale === 'fr' ? 'Déconnexion' : 'Sign out'}
+              {t.common.signOut}
             </button>
           </PopoverContent>
         </Popover>

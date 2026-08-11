@@ -25,10 +25,10 @@ export function LiveIndicator({ isFetching, lastUpdated, onRefresh, locale, inte
   const secondsAgo = lastUpdated ? Math.floor((now.getTime() - lastUpdated.getTime()) / 1000) : null
 
   const formatAgo = (s: number) => {
-    if (s < 5) return locale === 'fr' ? 'à l\'instant' : 'just now'
-    if (s < 60) return locale === 'fr' ? `il y a ${s}s` : `${s}s ago`
-    if (s < 3600) return locale === 'fr' ? `il y a ${Math.floor(s / 60)}min` : `${Math.floor(s / 60)}min ago`
-    return locale === 'fr' ? `il y a ${Math.floor(s / 3600)}h` : `${Math.floor(s / 3600)}h ago`
+    if (s < 5) return t.common.timeAgo.justNow
+    if (s < 60) return t.common.timeAgo.secondsAgo.replace('{n}', String(s))
+    if (s < 3600) return t.common.timeAgo.minutesAgo.replace('{n}', String(Math.floor(s / 60)))
+    return t.common.timeAgo.hoursAgo.replace('{n}', String(Math.floor(s / 3600)))
   }
 
   return (

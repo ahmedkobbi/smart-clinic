@@ -61,7 +61,7 @@ export function TelemedicineView({ locale }: { locale: Locale }) {
           }
         })
         .catch(() => {
-          toast.error(locale === 'fr' ? 'Accès caméra refusé' : 'Camera access denied')
+          toast.error(t.telemedicine.cameraDeniedToast)
           setVideoOn(false)
         })
     }
@@ -86,7 +86,7 @@ export function TelemedicineView({ locale }: { locale: Locale }) {
     }
     setInCall(false)
     setSelectedAppt(null)
-    toast.success(locale === 'fr' ? `Appel terminé (${formatDuration(elapsed)})` : `Call ended (${formatDuration(elapsed)})`)
+    toast.success(t.telemedicine.callEndedToast.replace('{duration}', formatDuration(elapsed)))
   }
 
   const toggleVideo = () => {
@@ -121,7 +121,7 @@ export function TelemedicineView({ locale }: { locale: Locale }) {
               <div className="flex items-center gap-2 mt-3">
                 <Badge variant="outline" className="animate-pulse">
                   <span className="w-2 h-2 rounded-full bg-success animate-pulse mr-1" />
-                  {locale === 'fr' ? 'En appel' : 'In call'}
+                  {t.telemedicine.inCall}
                 </Badge>
                 <span className="text-sm font-mono tabular-nums">{formatDuration(elapsed)}</span>
               </div>
@@ -137,7 +137,7 @@ export function TelemedicineView({ locale }: { locale: Locale }) {
                 </div>
               )}
               <div className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded bg-black/50 text-white text-[9px]">
-                {locale === 'fr' ? 'Vous' : 'You'}
+                {t.telemedicine.you}
               </div>
             </div>
 
@@ -172,7 +172,7 @@ export function TelemedicineView({ locale }: { locale: Locale }) {
           <div className="glass-card rounded-2xl p-4 space-y-4 overflow-y-auto scroll-area-glass">
             <div>
               <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-                {locale === 'fr' ? 'Patient' : 'Patient'}
+                {t.billing.patient}
               </h3>
               <button
                 onClick={() => { setView('patients'); setSelectedPatientId(selectedAppt.patientId) }}
@@ -187,7 +187,7 @@ export function TelemedicineView({ locale }: { locale: Locale }) {
 
             <div>
               <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-                {locale === 'fr' ? 'Actions rapides' : 'Quick actions'}
+                {t.dashboard.quickActions}
               </h3>
               <div className="space-y-1.5">
                 <button
@@ -195,22 +195,22 @@ export function TelemedicineView({ locale }: { locale: Locale }) {
                   className="w-full flex items-center gap-2 p-2 rounded-lg glass-base hover:bg-accent/50 text-sm transition-colors"
                 >
                   <FileText className="w-3.5 h-3.5 text-primary" />
-                  {locale === 'fr' ? 'Note de consultation' : 'Consultation note'}
+                  {t.telemedicine.consultationNote}
                 </button>
                 <button className="w-full flex items-center gap-2 p-2 rounded-lg glass-base hover:bg-accent/50 text-sm transition-colors">
                   <MessageSquare className="w-3.5 h-3.5 text-info" />
-                  {locale === 'fr' ? 'Messagerie' : 'Chat'}
+                  {t.telemedicine.chat}
                 </button>
                 <button className="w-full flex items-center gap-2 p-2 rounded-lg glass-base hover:bg-accent/50 text-sm transition-colors">
                   <Settings className="w-3.5 h-3.5 text-muted-foreground" />
-                  {locale === 'fr' ? 'Paramètres' : 'Settings'}
+                  {t.nav.settings}
                 </button>
               </div>
             </div>
 
             <div>
               <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-                {locale === 'fr' ? 'Qualité' : 'Quality'}
+                {t.telemedicine.quality}
               </h3>
               <div className="flex items-center gap-2 p-2 rounded-lg glass-base">
                 <Wifi className="w-4 h-4 text-success" />
@@ -238,9 +238,9 @@ export function TelemedicineView({ locale }: { locale: Locale }) {
           <Video className="w-6 h-6 text-primary" />
         </div>
         <div>
-          <h2 className="text-lg font-semibold">{locale === 'fr' ? 'Télémédecine' : 'Telemedicine'}</h2>
+          <h2 className="text-lg font-semibold">{t.telemedicine.title}</h2>
           <p className="text-xs text-muted-foreground">
-            {locale === 'fr' ? 'Consultations vidéo sécurisées avec e-prescription intégrée' : 'Secure video consultations with integrated e-prescription'}
+            {t.telemedicine.subtitle}
           </p>
         </div>
       </motion.div>
@@ -249,12 +249,12 @@ export function TelemedicineView({ locale }: { locale: Locale }) {
       <div>
         <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
           <Users className="w-4 h-4 text-primary" />
-          {locale === 'fr' ? 'Téléconsultations du jour' : 'Today\'s teleconsultations'}
+          {t.telemedicine.todayConsultations}
         </h3>
         {telemedicineAppts.length === 0 ? (
           <div className="glass-card rounded-2xl p-8 text-center text-sm text-muted-foreground">
             <Video className="w-8 h-8 mx-auto mb-2 opacity-40" />
-            {locale === 'fr' ? 'Aucune téléconsultation prévue' : 'No teleconsultations scheduled'}
+            {t.telemedicine.noneScheduled}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -281,7 +281,7 @@ export function TelemedicineView({ locale }: { locale: Locale }) {
                 {appt.reason && <p className="text-xs text-muted-foreground mb-3 line-clamp-2">{appt.reason}</p>}
                 <div className="flex items-center justify-between">
                   <Badge variant="outline" className="text-[10px] font-mono">
-                    {new Date(appt.startAt).toLocaleTimeString(locale === 'fr' ? 'fr-FR' : 'en-US', { hour: '2-digit', minute: '2-digit' })}
+                    {new Date(appt.startAt).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}
                   </Badge>
                   <Button
                     size="sm"
@@ -289,7 +289,7 @@ export function TelemedicineView({ locale }: { locale: Locale }) {
                     className="bg-success text-success-foreground hover:bg-success/90 h-8"
                   >
                     <Phone className="w-3.5 h-3.5" />
-                    {locale === 'fr' ? 'Démarrer' : 'Start'}
+                    {t.telemedicine.start}
                   </Button>
                 </div>
               </motion.div>

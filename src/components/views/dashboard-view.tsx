@@ -70,25 +70,25 @@ export function DashboardView({ locale }: { locale: Locale }) {
   })
 
   const specialtyData = (stats?.specialtyBreakdown || []).map(d => ({
-    name: locale === 'fr' ? specialtyFr(d.specialty) : d.specialty,
+    name: locale !== 'en' ? specialtyFr(d.specialty) : d.specialty,
     value: d.count,
     color: SPECIALTY_COLORS[d.specialty] || '#94a3b8',
   }))
 
   const weekData = (stats?.weekAppointments || []).map(d => ({
-    name: new Date(d.date).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { weekday: 'short' }),
+    name: new Date(d.date).toLocaleDateString(locale, { weekday: 'short' }),
     count: d.count,
   }))
 
   const revenueData = (stats?.revenueTrend || []).map(d => ({
-    name: new Date(d.date).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short' }),
+    name: new Date(d.date).toLocaleDateString(locale, { day: 'numeric', month: 'short' }),
     amount: d.amount,
   }))
 
   const riskData = stats ? [
-    { name: t.dashboard.kpi.noShowRate, value: stats.noShowRiskDistribution.high, color: '#ef4444', label: locale === 'fr' ? 'Élevé' : 'High' },
-    { name: t.dashboard.kpi.noShowRate, value: stats.noShowRiskDistribution.medium, color: '#f59e0b', label: locale === 'fr' ? 'Moyen' : 'Medium' },
-    { name: t.dashboard.kpi.noShowRate, value: stats.noShowRiskDistribution.low, color: '#22c55e', label: locale === 'fr' ? 'Bas' : 'Low' },
+    { name: t.dashboard.kpi.noShowRate, value: stats.noShowRiskDistribution.high, color: '#ef4444', label: t.dashboard.riskHigh },
+    { name: t.dashboard.kpi.noShowRate, value: stats.noShowRiskDistribution.medium, color: '#f59e0b', label: t.dashboard.riskMedium },
+    { name: t.dashboard.kpi.noShowRate, value: stats.noShowRiskDistribution.low, color: '#22c55e', label: t.dashboard.riskLow },
   ] : []
 
   return (
@@ -104,7 +104,7 @@ export function DashboardView({ locale }: { locale: Locale }) {
               value={stats.totalPatients}
               icon={Users}
               accent="primary"
-              trend={{ value: locale === 'fr' ? '+3 ce mois' : '+3 this month', direction: 'up' }}
+              trend={{ value: t.dashboard.trendThisMonth, direction: 'up' }}
               delay={0}
             />
             <StatCard
@@ -112,7 +112,7 @@ export function DashboardView({ locale }: { locale: Locale }) {
               value={stats.todaysAppointments}
               icon={CalendarClock}
               accent="info"
-              trend={{ value: locale === 'fr' ? '8 planifiés' : '8 scheduled', direction: 'neutral' }}
+              trend={{ value: t.dashboard.trendScheduled, direction: 'neutral' }}
               delay={50}
             />
             <StatCard
@@ -147,7 +147,7 @@ export function DashboardView({ locale }: { locale: Locale }) {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-sm font-semibold">{t.dashboard.charts.appointmentsWeek}</h3>
-              <p className="text-xs text-muted-foreground">{locale === 'fr' ? '7 derniers jours' : 'Last 7 days'}</p>
+              <p className="text-xs text-muted-foreground">{t.dashboard.last7days}</p>
             </div>
             <Activity className="w-4 h-4 text-muted-foreground" />
           </div>
@@ -235,7 +235,7 @@ export function DashboardView({ locale }: { locale: Locale }) {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-sm font-semibold">{t.dashboard.charts.revenueTrend}</h3>
-              <p className="text-xs text-muted-foreground">{locale === 'fr' ? 'Revenu encaissé' : 'Collected revenue'}</p>
+              <p className="text-xs text-muted-foreground">{t.dashboard.collectedRevenue}</p>
             </div>
             <Receipt className="w-4 h-4 text-muted-foreground" />
           </div>
@@ -326,7 +326,7 @@ export function DashboardView({ locale }: { locale: Locale }) {
             <div>
               <h3 className="text-sm font-semibold">{t.dashboard.todaySchedule}</h3>
               <p className="text-xs text-muted-foreground">
-                {(todayAppts?.items || []).length} {locale === 'fr' ? 'rendez-vous' : 'appointments'}
+                {(todayAppts?.items || []).length} {t.dashboard.appointmentsCount}
               </p>
             </div>
             <button
@@ -378,7 +378,7 @@ export function DashboardView({ locale }: { locale: Locale }) {
               <EmptyState
                 icon={Clock}
                 title={t.common.noData}
-                description={locale === 'fr' ? 'Aucun rendez-vous prévu aujourd\'hui.' : 'No appointments scheduled today.'}
+                description={t.dashboard.noAppointmentsToday}
               />
             )}
           </div>
@@ -439,7 +439,7 @@ export function DashboardView({ locale }: { locale: Locale }) {
                 <span className="status-pill text-success">RGPD</span>
               </div>
               <p className="text-[10px] text-muted-foreground">
-                {locale === 'fr' ? 'Chaîne d\'audit vérifiée · 0 incident' : 'Audit chain verified · 0 incidents'}
+                {t.dashboard.auditChainOk}
               </p>
             </div>
           </div>

@@ -85,10 +85,10 @@ export function BillingView({ locale }: { locale: Locale }) {
     <div className="p-4 md:p-6 space-y-4 pb-24">
       {/* Summary cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <SummaryCard label={locale === 'fr' ? 'Total facturé' : 'Total billed'} value={formatCurrency(summary.total, locale)} icon={Receipt} variant="primary" />
-        <SummaryCard label={locale === 'fr' ? 'Encaissé' : 'Collected'} value={formatCurrency(summary.paid, locale)} icon={Check} variant="success" />
-        <SummaryCard label={locale === 'fr' ? 'En attente' : 'Outstanding'} value={formatCurrency(summary.outstanding, locale)} icon={Clock} variant="warning" />
-        <SummaryCard label={locale === 'fr' ? 'En retard' : 'Overdue'} value={String(summary.overdue)} icon={AlertTriangle} variant="danger" />
+        <SummaryCard label={t.billing.totalBilled} value={formatCurrency(summary.total, locale)} icon={Receipt} variant="primary" />
+        <SummaryCard label={t.billing.collected} value={formatCurrency(summary.paid, locale)} icon={Check} variant="success" />
+        <SummaryCard label={t.billing.outstanding} value={formatCurrency(summary.outstanding, locale)} icon={Clock} variant="warning" />
+        <SummaryCard label={t.billing.overdueLabel} value={String(summary.overdue)} icon={AlertTriangle} variant="danger" />
       </div>
 
       {/* Filters */}
@@ -98,7 +98,7 @@ export function BillingView({ locale }: { locale: Locale }) {
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder={locale === 'fr' ? 'N° facture ou patient…' : 'Invoice # or patient…'}
+            placeholder={t.billing.searchPlaceholder}
             className="pl-10 glass-base border-0"
           />
         </div>
@@ -107,7 +107,7 @@ export function BillingView({ locale }: { locale: Locale }) {
             <SelectValue />
           </SelectTrigger>
           <SelectContent className="glass-floating">
-            <SelectItem value="all">{locale === 'fr' ? 'Toutes' : 'All'}</SelectItem>
+            <SelectItem value="all">{t.common.allStatuses}</SelectItem>
             <SelectItem value="paid">{t.billing.status.paid}</SelectItem>
             <SelectItem value="pending">{t.billing.status.pending}</SelectItem>
             <SelectItem value="partial">{t.billing.status.partial}</SelectItem>
@@ -185,7 +185,7 @@ function InvoiceRow({ inv, i, locale, t, onClick, onPaid }: any) {
         const err = await res.json()
         throw new Error(err.error || 'Failed')
       }
-      toast.success(locale === 'fr' ? `Facture ${inv.number} marquée comme payée` : `Invoice ${inv.number} marked as paid`)
+      toast.success(t.billing.invoicePaidToast.replace('{number}', inv.number))
       onPaid()
     } catch (e) {
       toast.error((e as Error).message)
@@ -204,7 +204,7 @@ function InvoiceRow({ inv, i, locale, t, onClick, onPaid }: any) {
     >
       <div className="col-span-3 md:col-span-2">
         <p className="text-xs font-mono font-semibold">{inv.number}</p>
-        <p className="text-[10px] text-muted-foreground">{inv.items?.length || 0} {locale === 'fr' ? 'lignes' : 'items'}</p>
+        <p className="text-[10px] text-muted-foreground">{inv.items?.length || 0} {t.billing.items}</p>
       </div>
       <div className="col-span-4 md:col-span-3 min-w-0">
         <p className="text-xs font-medium truncate">{inv.patient?.firstName} {inv.patient?.lastName}</p>
@@ -224,7 +224,7 @@ function InvoiceRow({ inv, i, locale, t, onClick, onPaid }: any) {
         <p className="text-xs font-semibold tabular-nums">{formatCurrency(inv.total, locale)}</p>
         {inv.patientShare > 0 && inv.patientShare !== inv.total && (
           <p className="text-[10px] text-muted-foreground tabular-nums">
-            {locale === 'fr' ? 'Patient' : 'Patient'}: {formatCurrency(inv.patientShare, locale)}
+            {t.billing.patient}: {formatCurrency(inv.patientShare, locale)}
           </p>
         )}
       </div>
@@ -242,7 +242,7 @@ function InvoiceRow({ inv, i, locale, t, onClick, onPaid }: any) {
           rel="noopener noreferrer"
           onClick={(e) => e.stopPropagation()}
           className="p-1 rounded hover:bg-primary/20 text-primary transition-colors"
-          title={locale === 'fr' ? 'Télécharger PDF' : 'Download PDF'}
+          title={t.billing.downloadPdf}
         >
           <FileDown className="w-3.5 h-3.5" />
         </a>
@@ -253,7 +253,7 @@ function InvoiceRow({ inv, i, locale, t, onClick, onPaid }: any) {
             onClick={handleMarkPaid}
             disabled={marking}
             className="p-1 rounded hover:bg-success/20 text-success transition-colors"
-            title={locale === 'fr' ? 'Marquer payée' : 'Mark as paid'}
+            title={t.billing.markAsPaid}
           >
             {marking ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
           </button>
@@ -320,7 +320,7 @@ function InvoiceForm({ open, onOpenChange, locale, patients, onSuccess }: any) {
 
   const handleSubmit = async () => {
     if (!form.patientId || form.items.length === 0) {
-      toast.error(locale === 'fr' ? 'Patient et au moins 1 acte requis' : 'Patient and at least 1 item required')
+      toast.error(t.billing.patientItemRequiredToast)
       return
     }
     setSubmitting(true)
@@ -331,7 +331,7 @@ function InvoiceForm({ open, onOpenChange, locale, patients, onSuccess }: any) {
         body: JSON.stringify(form),
       })
       if (!res.ok) throw new Error('Failed')
-      toast.success(locale === 'fr' ? 'Facture créée' : 'Invoice created')
+      toast.success(t.billing.createdToast)
       onSuccess()
       onOpenChange(false)
       setForm({ patientId: '', items: [], tiersPayant: true, paymentMethod: 'card' })
@@ -369,7 +369,7 @@ function InvoiceForm({ open, onOpenChange, locale, patients, onSuccess }: any) {
           <div className="space-y-1.5 col-span-2">
             <Label>{t.billing.ccamCodes}</Label>
             <Select value="" onValueChange={addCcam}>
-              <SelectTrigger><SelectValue placeholder={locale === 'fr' ? '+ Ajouter un acte' : '+ Add item'} /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder={t.billing.addItem} /></SelectTrigger>
               <SelectContent className="glass-floating max-h-72">
                 {CCAM_CODES.map(c => (
                   <SelectItem key={c.code} value={c.code}>{c.code} · {c.label} · {c.price}€</SelectItem>
@@ -382,7 +382,7 @@ function InvoiceForm({ open, onOpenChange, locale, patients, onSuccess }: any) {
           <div className="col-span-2 space-y-1.5">
             {form.items.length === 0 ? (
               <p className="text-xs text-muted-foreground p-3 rounded glass-base text-center">
-                {locale === 'fr' ? 'Aucun acte ajouté' : 'No items added'}
+                {t.billing.noItems}
               </p>
             ) : (
               form.items.map((item, idx) => (

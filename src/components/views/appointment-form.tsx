@@ -67,7 +67,7 @@ export function AppointmentForm({ open, onOpenChange, locale }: { open: boolean;
 
   const handleSubmit = async () => {
     if (!form.patientId || !form.practitionerId) {
-      toast.error(locale === 'fr' ? 'Patient et praticien requis' : 'Patient and practitioner required')
+      toast.error(t.common.patientPractitionerRequired)
       return
     }
     setSubmitting(true)
@@ -93,7 +93,7 @@ export function AppointmentForm({ open, onOpenChange, locale }: { open: boolean;
         throw new Error(err.error || 'Failed')
       }
       const appt = await res.json()
-      toast.success(`${locale === 'fr' ? 'Rendez-vous créé' : 'Appointment created'}`)
+      toast.success(t.appointments.createdToast)
       qc.invalidateQueries({ queryKey: ['appointments'] })
       qc.invalidateQueries({ queryKey: ['dashboard'] })
       onOpenChange(false)
@@ -119,7 +119,7 @@ export function AppointmentForm({ open, onOpenChange, locale }: { open: boolean;
           <div className="space-y-1.5 col-span-2">
             <Label>{t.appointments.patient} *</Label>
             <Select value={form.patientId} onValueChange={(v) => setForm({ ...form, patientId: v })}>
-              <SelectTrigger><SelectValue placeholder={locale === 'fr' ? 'Sélectionner' : 'Select'} /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder={t.common.select} /></SelectTrigger>
               <SelectContent className="glass-floating max-h-72">
                 {(patientsData?.items || []).map((p: any) => (
                   <SelectItem key={p.id} value={p.id}>
@@ -132,7 +132,7 @@ export function AppointmentForm({ open, onOpenChange, locale }: { open: boolean;
           <div className="space-y-1.5 col-span-2">
             <Label>{t.appointments.practitioner} *</Label>
             <Select value={form.practitionerId} onValueChange={(v) => setForm({ ...form, practitionerId: v })}>
-              <SelectTrigger><SelectValue placeholder={locale === 'fr' ? 'Sélectionner' : 'Select'} /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder={t.common.select} /></SelectTrigger>
               <SelectContent className="glass-floating max-h-72">
                 {(staffData?.practitioners || []).map((p: any) => (
                   <SelectItem key={p.id} value={p.id}>{p.name} — {p.specialty}</SelectItem>

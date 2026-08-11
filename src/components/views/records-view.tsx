@@ -102,7 +102,7 @@ export function RecordsView({ locale }: { locale: Locale }) {
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder={locale === 'fr' ? 'Rechercher une consultation…' : 'Search consultation…'}
+            placeholder={t.records.searchPlaceholder}
             className="pl-10 glass-base border-0 h-11"
           />
         </div>
@@ -133,7 +133,7 @@ export function RecordsView({ locale }: { locale: Locale }) {
           onClick={() => setDialogOpen(true)}
           className="shrink-0"
         >
-          <Wand2 className="w-3.5 h-3.5" /> {locale === 'fr' ? 'Générer un brouillon' : 'Generate draft'}
+          <Wand2 className="w-3.5 h-3.5" /> {t.records.generateDraft}
         </Button>
       </motion.div>
 
@@ -150,8 +150,8 @@ export function RecordsView({ locale }: { locale: Locale }) {
           <div className="col-span-2">
             <EmptyState
               icon={FileText}
-              title={locale === 'fr' ? 'Aucune consultation' : 'No consultations'}
-              description={locale === 'fr' ? 'Créez une nouvelle consultation ou utilisez le scribe IA pour générer un brouillon.' : 'Create a new consultation or use the AI scribe to generate a draft.'}
+              title={t.records.noConsultations}
+              description={t.records.noConsultationsDesc}
               action={{ label: t.records.new, onClick: () => setDialogOpen(true) }}
             />
           </div>
@@ -199,7 +199,7 @@ function ConsultationCard({ consultation: c, locale, index, onPatientClick, onSi
         const err = await res.json()
         throw new Error(err.error || 'Failed')
       }
-      toast.success(locale === 'fr' ? 'Consultation signée' : 'Consultation signed')
+      toast.success(t.records.signedToast)
       onSigned()
     } catch (e) {
       toast.error((e as Error).message)
@@ -299,7 +299,7 @@ function ConsultationForm({ open, onOpenChange, locale, patients, practitioners,
 
   const handleGenerate = async () => {
     if (!form.chiefComplaint.trim()) {
-      toast.error(locale === 'fr' ? 'Saisir un motif de consultation d\'abord' : 'Enter chief complaint first')
+      toast.error(t.records.chiefRequiredToast)
       return
     }
     setGenerating(true)
@@ -333,8 +333,8 @@ function ConsultationForm({ open, onOpenChange, locale, patients, practitioners,
         aiDrafted: true,
         aiConfidence: draft.confidence || 0.7,
       })
-      toast.success(locale === 'fr' ? `Brouillon IA généré (confiance: ${Math.round((draft.confidence || 0.7) * 100)}%)` : `AI draft generated (${Math.round((draft.confidence || 0.7) * 100)}% confidence)`)
-      toast.warning(locale === 'fr' ? 'Brouillon — validation médicale obligatoire' : 'Draft — medical validation required', { duration: 5000 })
+      toast.success(t.records.aiDraftGeneratedToast.replace('{percent}', String(Math.round((draft.confidence || 0.7) * 100))))
+      toast.warning(t.records.aiDraftValidationToast, { duration: 5000 })
     } catch (e) {
       toast.error((e as Error).message)
     } finally {
@@ -344,7 +344,7 @@ function ConsultationForm({ open, onOpenChange, locale, patients, practitioners,
 
   const handleSubmit = async () => {
     if (!form.patientId || !form.practitionerId) {
-      toast.error(locale === 'fr' ? 'Patient et praticien requis' : 'Patient and practitioner required')
+      toast.error(t.common.patientPractitionerRequired)
       return
     }
     setSubmitting(true)
@@ -362,7 +362,7 @@ function ConsultationForm({ open, onOpenChange, locale, patients, practitioners,
         }),
       })
       if (!res.ok) throw new Error('Failed')
-      toast.success(locale === 'fr' ? 'Consultation enregistrée' : 'Consultation saved')
+      toast.success(t.records.consultationSavedToast)
       onSuccess()
       onOpenChange(false)
       setForm({
@@ -426,15 +426,15 @@ function ConsultationForm({ open, onOpenChange, locale, patients, practitioners,
                 {t.ai.scribe}
               </Button>
             </div>
-            <Input value={form.chiefComplaint} onChange={(e) => setForm({ ...form, chiefComplaint: e.target.value })} placeholder={locale === 'fr' ? 'ex: Douleur thoracique, fièvre 3 jours...' : 'e.g. Chest pain, fever 3 days...'} />
+            <Input value={form.chiefComplaint} onChange={(e) => setForm({ ...form, chiefComplaint: e.target.value })} placeholder={t.records.chiefPlaceholder} />
           </div>
 
           {form.aiDrafted && (
             <div className="col-span-2 p-2 rounded-lg bg-glass-accent/10 border border-glass-accent/30 flex items-center gap-2 text-[11px] text-glass-accent">
               <Sparkles className="w-3.5 h-3.5 animate-pulse-glow" />
-              <span>{locale === 'fr' ? 'Brouillon généré par IA — confiance' : 'AI-generated draft — confidence'}: {Math.round(form.aiConfidence * 100)}%</span>
+              <span>{t.records.aiDraftConfidence}: {Math.round(form.aiConfidence * 100)}%</span>
               <span className="text-muted-foreground">·</span>
-              <span>{locale === 'fr' ? 'Modifiez et validez avant signature' : 'Edit and validate before signing'}</span>
+              <span>{t.records.editBeforeSign}</span>
             </div>
           )}
 
