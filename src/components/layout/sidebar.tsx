@@ -7,7 +7,7 @@ import { signOut, type Session } from 'next-auth/react'
 import {
   LayoutDashboard, Users, CalendarClock, FileText, Receipt,
   ShieldCheck, Package, Settings, HeartPulse, Leaf, Stethoscope,
-  LogOut, FolderOpen, FlaskConical, Video, IdCard,
+  LogOut, FolderOpen, FlaskConical, Video, IdCard, Crown,
 } from 'lucide-react'
 import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
@@ -110,6 +110,21 @@ export function Sidebar({ locale, session }: { locale: Locale; session: Session 
             <span className="status-pill text-success">Live</span>
           </div>
         </div>
+        {/* Admin console toggle — only for superadmin */}
+        {(session?.user as any)?.role === 'admin' && (
+          <button
+            onClick={() => useApp.getState().setUserMode('admin')}
+            className="w-full p-2.5 rounded-xl glass-raised text-xs font-medium flex items-center gap-2 hover:bg-glass-warm/10 transition-colors group"
+          >
+            <div className="w-7 h-7 rounded-lg bg-glass-warm/15 flex items-center justify-center group-hover:bg-glass-warm/25 transition-colors">
+              <Crown className="w-3.5 h-3.5 text-glass-warm" />
+            </div>
+            <div className="text-left flex-1">
+              <p className="text-glass-warm font-medium">{locale === 'fr' ? 'Console Propriétaire' : 'Owner Console'}</p>
+              <p className="text-[10px] text-muted-foreground">{locale === 'fr' ? 'Licences & contrôle' : 'Licenses & control'}</p>
+            </div>
+          </button>
+        )}
         <p className="text-[10px] text-muted-foreground text-center">{t.footer.compliant}</p>
       </div>
     </aside>

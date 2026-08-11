@@ -22,6 +22,13 @@ import { DocumentsView } from '@/components/views/documents-view'
 import { LabsView } from '@/components/views/labs-view'
 import { TelemedicineView } from '@/components/views/telemedicine-view'
 import { StaffView } from '@/components/views/staff-view'
+import { AdminSidebar } from '@/components/layout/admin-sidebar'
+import { AdminTopBar } from '@/components/layout/admin-topbar'
+import { AdminDashboardView } from '@/components/views/admin-dashboard-view'
+import { AdminLicensesView } from '@/components/views/admin-licenses-view'
+import { AdminInstancesView } from '@/components/views/admin-instances-view'
+import { AdminUpdatesView } from '@/components/views/admin-updates-view'
+import { AdminActionsView } from '@/components/views/admin-actions-view'
 import { Menu } from 'lucide-react'
 import { useState } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -74,11 +81,48 @@ function AppShell() {
     return <LoginScreen />
   }
 
+  // Owner side — admin console
+  if (useApp.getState().userMode === 'admin') {
+    return (
+      <div className="flex min-h-screen">
+        <AdminSidebar locale={locale} session={session} />
+        <button
+          onClick={() => setMobileNavOpen(true)}
+          className="md:hidden fixed top-3 left-3 z-50 p-2 rounded-lg glass-floating"
+          aria-label="Open menu"
+        >
+          <Menu className="w-4 h-4" />
+        </button>
+        <div className="flex-1 flex flex-col min-w-0">
+          <AdminTopBar locale={locale} session={session} />
+          <main className="flex-1 animate-fade-in">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={view}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              >
+                {view === 'admin-dashboard' && <AdminDashboardView locale={locale} />}
+                {view === 'admin-licenses' && <AdminLicensesView locale={locale} />}
+                {view === 'admin-instances' && <AdminInstancesView locale={locale} />}
+                {view === 'admin-updates' && <AdminUpdatesView locale={locale} />}
+                {view === 'admin-actions' && <AdminActionsView locale={locale} />}
+              </motion.div>
+            </AnimatePresence>
+          </main>
+        </div>
+        <CommandPalette locale={locale} />
+      </div>
+    )
+  }
+
+  // Clinic side — practitioner UI
   return (
     <div className="flex min-h-screen">
       <Sidebar locale={locale} session={session} />
 
-      {/* Mobile menu trigger */}
       <button
         onClick={() => setMobileNavOpen(true)}
         className="md:hidden fixed top-3 left-3 z-50 p-2 rounded-lg glass-floating"

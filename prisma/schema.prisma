@@ -464,3 +464,109 @@ model StaffCredential {
   tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   practitioner Practitioner? @relation(fields: [practitionerId], references: [id])
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// OWNER SIDE — Licensing & Control Server
+// Manages desktop instances, license leases, telemetry, updates
+// ─────────────────────────────────────────────────────────────────────────────
+
+model License {
+  id                String   @id @default(cuid())
+  licenseKey        String   @unique  // SC-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX-XX
+  customerName      String   // clinic legal name
+  customerEmail     String   // contact email
+  customerOrg       String?  // organization
+  customerCountry   String   @default("FR")
+  plan              String   @default("professional") // trial | essential | professional | enterprise
+  modules           String   @default("[]") // JSON array of enabled modules
+  maxDevices        Int      @default(1)
+  maxPractitioners  Int      @default(10)
+  issuedAt          DateTime @default(now())
+  expiresAt         DateTime
+  status            String   @default("active") // active | suspended | revoked | expired
+  revocationReason  String?
+  revokedAt         DateTime?
+  notes             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  instances         Instance[]
+  featureFlags      FeatureFlag[]
+  leases            Lease[]
+}
+
+model Instance {
+  id              String   @id @default(cuid())
+  licenseId       String
+  fingerprint     String   @unique  // machine fingerprint hash
+  hostname        String?  // machine name
+  os              String?  // win32/darwin/linux + version
+  appVersion      String?  // installed app version
+  firstSeenAt     DateTime @default(now())
+  lastSeenAt      DateTime @default(now())
+  status          String   @default("active") // active | inactive | blocked
+  leaseExpiry     DateTime?
+  createdAt       DateTime @default(now())
+
+  license         License  @relation(fields: [licenseId], references: [id], onDelete: Cascade)
+  leases          Lease[]
+  telemetryEvents TelemetryEvent[]
+}
+
+model Lease {
+  id              String   @id @default(cuid())
+  licenseId       String
+  instanceId      String
+  jwt             String   @unique  // signed JWT
+  issuedAt        DateTime @default(now())
+  expiresAt       DateTime
+  revokedAt       DateTime?
+  revokedReason   String?
+
+  license         License  @relation(fields: [licenseId], references: [id], onDelete: Cascade)
+  instance        Instance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+}
+
+model TelemetryEvent {
+  id              String   @id @default(cuid())
+  instanceId      String
+  eventType       String   // heartbeat | error | feature_usage | backup | update_check
+  payload         String   // JSON, anonymized
+  receivedAt      DateTime @default(now())
+
+  instance        Instance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+}
+
+model FeatureFlag {
+  id              String   @id @default(cuid())
+  licenseId       String
+  flagKey         String   // module name
+  enabled         Boolean  @default(true)
+  updatedAt       DateTime @updatedAt
+
+  license         License  @relation(fields: [licenseId], references: [id], onDelete: Cascade)
+  @@unique([licenseId, flagKey])
+}
+
+model UpdateChannel {
+  id              String   @id @default(cuid())
+  channel         String   @unique  // stable | canary | beta
+  latestVersion   String
+  minVersion      String?  // minimum required (force update)
+  rolloutPercent  Int      @default(100)
+  releaseNotes    String?
+  bundleUrl       String?
+  bundleSignature String?  // Ed25519 signature
+  publishedAt     DateTime @default(now())
+}
+
+model AdminAction {
+  id              String   @id @default(cuid())
+  adminEmail      String
+  action          String   // issue_license | revoke | extend | block_instance | etc.
+  targetId        String?
+  target          String?  // license | instance | feature_flag | update
+  payload         String?  // JSON
+  ipAddress       String?
+  createdAt       DateTime @default(now())
+}

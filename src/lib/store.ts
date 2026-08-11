@@ -22,6 +22,12 @@ export type ViewKey =
   | 'labs'
   | 'telemedicine'
   | 'staff'
+  // Owner side — admin panel
+  | 'admin-dashboard'
+  | 'admin-licenses'
+  | 'admin-instances'
+  | 'admin-updates'
+  | 'admin-actions'
 
 export type Theme = 'light' | 'dark'
 export type Density = 'comfortable' | 'compact'
@@ -30,6 +36,10 @@ interface AppState {
   // Navigation
   view: ViewKey
   setView: (v: ViewKey) => void
+
+  // User mode — clinic (practitioner) or admin (owner side)
+  userMode: 'clinic' | 'admin'
+  setUserMode: (m: 'clinic' | 'admin') => void
 
   // Selected patient (for detail drawer)
   selectedPatientId: string | null
@@ -74,6 +84,9 @@ export const useApp = create<AppState>()(
     (set, get) => ({
       view: 'dashboard',
       setView: (view) => set({ view }),
+
+      userMode: 'clinic',
+      setUserMode: (userMode) => set({ userMode, view: userMode === 'admin' ? 'admin-dashboard' : 'dashboard' }),
 
       selectedPatientId: null,
       setSelectedPatientId: (id) => set({ selectedPatientId: id }),
