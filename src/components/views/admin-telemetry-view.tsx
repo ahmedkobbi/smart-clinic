@@ -2,6 +2,7 @@
 
 import { useApp } from '@/lib/store'
 import { getDict, formatDateTime, type Locale } from '@/lib/i18n'
+// Search placeholder is in the telemetry dictionary
 import { motion } from 'framer-motion'
 import { useQuery } from '@tanstack/react-query'
 import {
@@ -91,7 +92,7 @@ export function AdminTelemetryView({ locale }: { locale: Locale }) {
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder={locale === 'fr' ? 'Rechercher (instance, client)...' : 'Search (instance, customer)...'}
+            placeholder={t.admin.instances.searchPlaceholder}
             className="pl-10 glass-base border-0 h-11"
           />
         </div>

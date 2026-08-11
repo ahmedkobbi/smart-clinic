@@ -1,9 +1,13 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import "@mantine/core/styles.css";
+import "@mantine/dates/styles.css";
+import "@mantine/notifications/styles.css";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Providers } from "@/components/providers";
+import { MantineProviderWrapper } from "@/components/mantine-provider-wrapper";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -45,14 +49,22 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr" suppressHydrationWarning>
+      <head>
+        <style>{`
+          /* Mantine + Tailwind coexistence: prevent specificity wars */
+          .mantine-* { box-sizing: border-box; }
+        `}</style>
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground min-h-screen`}
       >
-        <Providers>
-          {children}
-          <Toaster />
-          <Sonner />
-        </Providers>
+        <MantineProviderWrapper>
+          <Providers>
+            {children}
+            <Toaster />
+            <Sonner />
+          </Providers>
+        </MantineProviderWrapper>
       </body>
     </html>
   );

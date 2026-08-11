@@ -1,29 +1,24 @@
 'use client'
 
 import { useApp } from '@/lib/store'
-import { type Locale, formatDateTime } from '@/lib/i18n'
+import { getDict, formatDateTime, type Locale } from '@/lib/i18n'
 import { motion } from 'framer-motion'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-  Upload, Rocket, FlaskConical, CheckCircle2, Loader2, Zap,
-  Shield, AlertTriangle,
+  Text, Group, Stack, Badge, Button, TextInput, Textarea, Select,
+  Modal, ScrollArea,
+} from '@mantine/core'
+import { notifications } from '@mantine/notifications'
+import {
+  Upload, Rocket, CheckCircle2, Zap, Shield, AlertTriangle,
 } from 'lucide-react'
 import { useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Badge } from '@/components/ui/badge'
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
-} from '@/components/ui/dialog'
 import { SkeletonCard } from '@/components/common/skeleton'
-import { toast } from 'sonner'
 
-const CHANNEL_CONFIG = {
-  stable: { icon: CheckCircle2, color: 'text-success bg-success/10', label: { fr: 'Stable', en: 'Stable' } },
-  canary: { icon: Zap, color: 'text-glass-warm bg-glass-warm/10', label: { fr: 'Canari', en: 'Canary' } },
-  beta: { icon: FlaskConical, color: 'text-info bg-info/10', label: { fr: 'Bêta', en: 'Beta' } },
+const CHANNEL_CONFIG: Record<string, { icon: any; color: string; labelKey: string }> = {
+  stable: { icon: CheckCircle2, color: 'green', labelKey: 'stable' },
+  canary: { icon: Zap, color: 'orange', labelKey: 'canary' },
+  beta: { icon: Rocket, color: 'blue', labelKey: 'beta' },
 }
 
 async function fetchUpdates() {
@@ -33,6 +28,7 @@ async function fetchUpdates() {
 }
 
 export function AdminUpdatesView({ locale }: { locale: Locale }) {
+  const t = getDict(locale)
   const qc = useQueryClient()
   const [publishOpen, setPublishOpen] = useState(false)
 
@@ -45,15 +41,15 @@ export function AdminUpdatesView({ locale }: { locale: Locale }) {
   return (
     <div className="p-4 md:p-6 space-y-4 pb-24">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold">{locale === 'fr' ? 'Canaux de mise à jour' : 'Update channels'}</h2>
-          <p className="text-xs text-muted-foreground">{locale === 'fr' ? 'Contrôle du rollout des versions bureau' : 'Control desktop version rollout'}</p>
-        </div>
-        <Button onClick={() => setPublishOpen(true)} className="bg-primary text-primary-foreground">
-          <Upload className="w-4 h-4" /> {locale === 'fr' ? 'Publier' : 'Publish'}
+      <Group justify="space-between" align="flex-end">
+        <Stack gap={0}>
+          <Text size="lg" fw={600}>{t.admin.updates.title}</Text>
+          <Text size="xs" c="dimmed">{t.admin.updates.subtitle}</Text>
+        </Stack>
+        <Button leftSection={<Upload size={16} />} onClick={() => setPublishOpen(true)}>
+          {t.admin.updates.publish}
         </Button>
-      </div>
+      </Group>
 
       {/* Channels */}
       {isLoading ? (
@@ -63,7 +59,7 @@ export function AdminUpdatesView({ locale }: { locale: Locale }) {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {(data?.items || []).map((ch: any, i: number) => {
-            const config = CHANNEL_CONFIG[ch.channel as keyof typeof CHANNEL_CONFIG] || CHANNEL_CONFIG.stable
+            const config = CHANNEL_CONFIG[ch.channel] || CHANNEL_CONFIG.stable
             const Icon = config.icon
             return (
               <motion.div
@@ -73,48 +69,48 @@ export function AdminUpdatesView({ locale }: { locale: Locale }) {
                 transition={{ delay: i * 50 }}
                 className="glass-card rounded-2xl p-5"
               >
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${config.color}`}>
-                      <Icon className="w-5 h-5" />
+                <Group justify="space-between" mb="md">
+                  <Group gap="sm">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center bg-${config.color}-500/10`}>
+                      <Icon className={`w-5 h-5 text-${config.color}-500`} />
                     </div>
                     <div>
-                      <p className="text-sm font-semibold">{config.label[locale as 'fr' | 'en']}</p>
-                      <p className="text-[10px] text-muted-foreground">{ch.channel}</p>
+                      <Text size="sm" fw={600}>{(t.admin.updates as any)[config.labelKey]}</Text>
+                      <Text size="10px" c="dimmed">{ch.channel}</Text>
                     </div>
-                  </div>
-                  <Badge variant="outline" className="text-[10px]">{ch.rolloutPercent}%</Badge>
-                </div>
+                  </Group>
+                  <Badge variant="outline" size="sm">{ch.rolloutPercent}%</Badge>
+                </Group>
 
-                <div className="space-y-2 mb-4">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">{locale === 'fr' ? 'Version' : 'Version'}</span>
-                    <span className="font-mono font-semibold">{ch.latestVersion}</span>
-                  </div>
+                <Stack gap="xs" mb="md">
+                  <Group justify="space-between">
+                    <Text size="xs" c="dimmed">{t.admin.updates.version}</Text>
+                    <Text size="xs" ff="mono" fw={600}>{ch.latestVersion}</Text>
+                  </Group>
                   {ch.minVersion && (
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">{locale === 'fr' ? 'Min requis' : 'Min required'}</span>
-                      <span className="font-mono text-destructive">{ch.minVersion}</span>
-                    </div>
+                    <Group justify="space-between">
+                      <Text size="xs" c="dimmed">{t.admin.updates.minVersion}</Text>
+                      <Text size="xs" ff="mono" c="red">{ch.minVersion}</Text>
+                    </Group>
                   )}
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">{locale === 'fr' ? 'Publié' : 'Published'}</span>
-                    <span>{formatDateTime(ch.publishedAt, locale)}</span>
-                  </div>
-                </div>
+                  <Group justify="space-between">
+                    <Text size="xs" c="dimmed">{t.admin.updates.published}</Text>
+                    <Text size="xs">{formatDateTime(ch.publishedAt, locale)}</Text>
+                  </Group>
+                </Stack>
 
                 {ch.releaseNotes && (
-                  <div className="p-2 rounded-lg glass-base text-[11px] text-muted-foreground mb-3 max-h-32 overflow-y-auto scroll-area-glass whitespace-pre-wrap">
-                    {ch.releaseNotes}
-                  </div>
+                  <ScrollArea.Autosize mah={120} className="p-2 rounded-lg glass-base mb-3">
+                    <Text size="xs" c="dimmed" className="whitespace-pre-wrap">{ch.releaseNotes}</Text>
+                  </ScrollArea.Autosize>
                 )}
 
-                <div className="flex items-center gap-2 pt-2 border-t border-border/30">
-                  <Shield className="w-3 h-3 text-success" />
-                  <span className="text-[10px] text-muted-foreground truncate">
-                    {ch.bundleSignature ? `Signature: ${ch.bundleSignature.slice(0, 20)}...` : 'No signature'}
-                  </span>
-                </div>
+                <Group gap="xs" className="pt-2 border-t border-border/30">
+                  <Shield size={12} className="text-success" />
+                  <Text size="10px" c="dimmed" truncate>
+                    {ch.bundleSignature ? `${ch.bundleSignature.slice(0, 20)}...` : t.admin.updates.noSignature}
+                  </Text>
+                </Group>
               </motion.div>
             )
           })}
@@ -124,12 +120,10 @@ export function AdminUpdatesView({ locale }: { locale: Locale }) {
       {/* Info */}
       <div className="glass-base rounded-xl p-4 flex items-start gap-3">
         <AlertTriangle className="w-4 h-4 text-warning mt-0.5 shrink-0" />
-        <div className="text-xs text-muted-foreground leading-relaxed">
-          <p className="font-medium text-foreground mb-1">{locale === 'fr' ? 'Sécurité des mises à jour' : 'Update safety'}</p>
-          {locale === 'fr'
-            ? 'Les bundles sont signés avec Ed25519. Le client de bureau vérifie la signature avant installation. Un rollback automatique se déclenche si l\'app échoue dans les 5 minutes après le démarrage. Les mises à jour ne s\'appliquent jamais pendant les heures d\'ouverture (02:00-05:00 par défaut).'
-            : 'Bundles are signed with Ed25519. Desktop client verifies signature before installing. Automatic rollback triggers if app fails within 5 minutes of startup. Updates never apply during clinic hours (02:00-05:00 default).'}
-        </div>
+        <Stack gap={2}>
+          <Text size="xs" fw={600}>{t.admin.updates.safetyTitle}</Text>
+          <Text size="xs" c="dimmed" className="leading-relaxed">{t.admin.updates.safetyDesc}</Text>
+        </Stack>
       </div>
 
       <PublishDialog open={publishOpen} onOpenChange={setPublishOpen} locale={locale} onSuccess={() => qc.invalidateQueries({ queryKey: ['admin-updates'] })} />
@@ -138,6 +132,7 @@ export function AdminUpdatesView({ locale }: { locale: Locale }) {
 }
 
 function PublishDialog({ open, onOpenChange, locale, onSuccess }: any) {
+  const t = getDict(locale)
   const [form, setForm] = useState({
     channel: 'stable',
     latestVersion: '1.2.1',
@@ -151,7 +146,7 @@ function PublishDialog({ open, onOpenChange, locale, onSuccess }: any) {
 
   const handleSubmit = async () => {
     if (!form.latestVersion) {
-      toast.error(locale === 'fr' ? 'Version requise' : 'Version required')
+      notifications.show({ message: t.admin.updates.versionRequired, color: 'red' })
       return
     }
     setSubmitting(true)
@@ -164,79 +159,91 @@ function PublishDialog({ open, onOpenChange, locale, onSuccess }: any) {
           minVersion: form.minVersion || undefined,
           bundleUrl: form.bundleUrl || undefined,
           bundleSignature: form.bundleSignature || undefined,
-          // adminEmail derived from session on server
-
         }),
       })
       if (!res.ok) throw new Error('Failed')
-      toast.success(locale === 'fr' ? 'Mise à jour publiée' : 'Update published')
+      notifications.show({ message: t.admin.updates.publishedToast, color: 'green' })
       onSuccess()
       onOpenChange(false)
     } catch (e) {
-      toast.error((e as Error).message)
+      notifications.show({ message: (e as Error).message, color: 'red' })
     } finally {
       setSubmitting(false)
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="glass-floating max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Rocket className="w-5 h-5 text-primary" />
-            {locale === 'fr' ? 'Publier une mise à jour' : 'Publish update'}
-          </DialogTitle>
-          <DialogDescription>{locale === 'fr' ? 'Déploie une nouvelle version sur un canal' : 'Deploy a new version to a channel'}</DialogDescription>
-        </DialogHeader>
-
-        <div className="grid grid-cols-2 gap-3 py-2">
-          <div className="space-y-1.5">
-            <Label>{locale === 'fr' ? 'Canal' : 'Channel'}</Label>
-            <select
-              value={form.channel}
-              onChange={(e) => setForm({ ...form, channel: e.target.value })}
-              className="w-full h-10 px-3 rounded-md glass-base border-0 text-sm"
-            >
-              <option value="stable">{locale === 'fr' ? 'Stable' : 'Stable'}</option>
-              <option value="beta">Beta</option>
-              <option value="canary">{locale === 'fr' ? 'Canari' : 'Canary'}</option>
-            </select>
-          </div>
-          <div className="space-y-1.5">
-            <Label>{locale === 'fr' ? 'Version' : 'Version'} *</Label>
-            <Input value={form.latestVersion} onChange={(e) => setForm({ ...form, latestVersion: e.target.value })} className="glass-base border-0 font-mono" placeholder="1.2.1" />
-          </div>
-          <div className="space-y-1.5">
-            <Label>{locale === 'fr' ? 'Version min (force)' : 'Min version (force)'}</Label>
-            <Input value={form.minVersion} onChange={(e) => setForm({ ...form, minVersion: e.target.value })} className="glass-base border-0 font-mono" placeholder="1.0.0" />
-          </div>
-          <div className="space-y-1.5">
-            <Label>{locale === 'fr' ? 'Rollout %' : 'Rollout %'}</Label>
-            <Input type="number" min="0" max="100" value={form.rolloutPercent} onChange={(e) => setForm({ ...form, rolloutPercent: parseInt(e.target.value) })} className="glass-base border-0" />
-          </div>
-          <div className="space-y-1.5 col-span-2">
-            <Label>{locale === 'fr' ? 'Notes de version' : 'Release notes'}</Label>
-            <Textarea rows={4} value={form.releaseNotes} onChange={(e) => setForm({ ...form, releaseNotes: e.target.value })} className="glass-base border-0" placeholder="## Changes..." />
-          </div>
-          <div className="space-y-1.5 col-span-2">
-            <Label>Bundle URL</Label>
-            <Input value={form.bundleUrl} onChange={(e) => setForm({ ...form, bundleUrl: e.target.value })} className="glass-base border-0" placeholder="https://releases.smartclinic.app/..." />
-          </div>
-          <div className="space-y-1.5 col-span-2">
-            <Label>{locale === 'fr' ? 'Signature Ed25519' : 'Ed25519 signature'}</Label>
-            <Input value={form.bundleSignature} onChange={(e) => setForm({ ...form, bundleSignature: e.target.value })} className="glass-base border-0 font-mono" placeholder="ed25519:..." />
-          </div>
-        </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>{locale === 'fr' ? 'Annuler' : 'Cancel'}</Button>
-          <Button onClick={handleSubmit} disabled={submitting}>
-            {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            {locale === 'fr' ? 'Publier' : 'Publish'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <Modal opened={open} onClose={onOpenChange} title={
+      <Group gap="sm">
+        <Rocket size={20} className="text-primary" />
+        <Text fw={600}>{t.admin.updates.publishTitle}</Text>
+      </Group>
+    } size="lg">
+      <Stack gap="sm">
+        <Group grow>
+          <Select
+            label={t.admin.updates.channel}
+            value={form.channel}
+            onChange={(v) => setForm({ ...form, channel: v || 'stable' })}
+            data={[
+              { value: 'stable', label: t.admin.updates.stable },
+              { value: 'beta', label: t.admin.updates.beta },
+              { value: 'canary', label: t.admin.updates.canary },
+            ]}
+            variant="filled"
+          />
+          <TextInput
+            label={`${t.admin.updates.version} *`}
+            value={form.latestVersion}
+            onChange={(e) => setForm({ ...form, latestVersion: e.target.value })}
+            variant="filled"
+            ff="mono"
+          />
+        </Group>
+        <Group grow>
+          <TextInput
+            label={t.admin.updates.minVersion}
+            value={form.minVersion}
+            onChange={(e) => setForm({ ...form, minVersion: e.target.value })}
+            variant="filled"
+            ff="mono"
+          />
+          <TextInput
+            label={t.admin.updates.rollout}
+            type="number"
+            min={0}
+            max={100}
+            value={form.rolloutPercent}
+            onChange={(e) => setForm({ ...form, rolloutPercent: parseInt(e.target.value) })}
+            variant="filled"
+          />
+        </Group>
+        <Textarea
+          label={t.admin.updates.releaseNotes}
+          value={form.releaseNotes}
+          onChange={(e) => setForm({ ...form, releaseNotes: e.target.value })}
+          variant="filled"
+          autosize
+          minRows={3}
+        />
+        <TextInput
+          label={t.admin.updates.bundleUrl}
+          value={form.bundleUrl}
+          onChange={(e) => setForm({ ...form, bundleUrl: e.target.value })}
+          variant="filled"
+        />
+        <TextInput
+          label={t.admin.updates.signature}
+          value={form.bundleSignature}
+          onChange={(e) => setForm({ ...form, bundleSignature: e.target.value })}
+          variant="filled"
+          ff="mono"
+        />
+        <Group justify="flex-end" mt="md">
+          <Button variant="default" onClick={onOpenChange}>{t.admin.updates.cancel}</Button>
+          <Button onClick={handleSubmit} loading={submitting}>{t.admin.updates.publish}</Button>
+        </Group>
+      </Stack>
+    </Modal>
   )
 }

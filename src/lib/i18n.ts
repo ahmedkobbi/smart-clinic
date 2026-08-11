@@ -377,6 +377,7 @@ export const dict = {
         churn: 'Churn',
         monthlyMrr: 'MRR mensuel',
         total: 'total',
+        events24h: 'événements 24h',
       },
       licenses: {
         title: 'Licences',
@@ -874,6 +875,7 @@ export const dict = {
         churn: 'Churn',
         monthlyMrr: 'Monthly MRR',
         total: 'total',
+        events24h: 'events 24h',
       },
       licenses: {
         title: 'Licenses',

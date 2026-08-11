@@ -1,42 +1,37 @@
 'use client'
 
 import { useApp } from '@/lib/store'
-import { type Locale, formatDate } from '@/lib/i18n'
+import { getDict, formatDate, type Locale } from '@/lib/i18n'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
+  Text, Group, Stack, Badge, Button, TextInput, Textarea, Select,
+  Modal, ScrollArea, ActionIcon, CopyButton, Tooltip, LoadingOverlay,
+} from '@mantine/core'
+import { notifications } from '@mantine/notifications'
+import {
   KeyRound, Plus, Search, Copy, Check, Ban, Play, Clock,
-  AlertTriangle, Loader2, X, Eye, RefreshCw,
+  AlertTriangle, Loader2, Eye,
 } from 'lucide-react'
 import { useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Badge } from '@/components/ui/badge'
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select'
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
-} from '@/components/ui/dialog'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { SkeletonList } from '@/components/common/skeleton'
 import { EmptyState } from '@/components/common/empty-state'
-import { toast } from 'sonner'
 
 const PLAN_CONFIG = {
-  trial: { color: 'text-muted-foreground bg-muted', label: { fr: 'Essai', en: 'Trial' }, price: 0 },
-  essential: { color: 'text-info bg-info/10', label: { fr: 'Essentiel', en: 'Essential' }, price: 49 },
-  professional: { color: 'text-primary bg-primary/10', label: { fr: 'Professionnel', en: 'Professional' }, price: 99 },
-  enterprise: { color: 'text-glass-warm bg-glass-warm/10', label: { fr: 'Entreprise', en: 'Enterprise' }, price: 299 },
+  trial: { color: 'gray', labelKey: 'planTrial' },
+  essential: { color: 'blue', labelKey: 'planEssential' },
+  professional: { color: 'cyan', labelKey: 'planProfessional' },
+  enterprise: { color: 'grape', labelKey: 'planEnterprise' },
+  price: 0,
 }
 
+const PLAN_PRICES: Record<string, number> = { trial: 0, essential: 49, professional: 99, enterprise: 299 }
+
 const STATUS_CONFIG = {
-  active: { color: 'text-success bg-success/10', label: { fr: 'Active', en: 'Active' } },
-  revoked: { color: 'text-destructive bg-destructive/10', label: { fr: 'Révoquée', en: 'Revoked' } },
-  suspended: { color: 'text-warning bg-warning/10', label: { fr: 'Suspendue', en: 'Suspended' } },
-  expired: { color: 'text-muted-foreground bg-muted', label: { fr: 'Expirée', en: 'Expired' } },
+  active: { color: 'green', labelKey: 'statusActive' },
+  revoked: { color: 'red', labelKey: 'statusRevoked' },
+  suspended: { color: 'orange', labelKey: 'statusSuspended' },
+  expired: { color: 'gray', labelKey: 'statusExpired' },
 }
 
 async function fetchLicenses(search: string, status: string, plan: string) {
@@ -50,6 +45,7 @@ async function fetchLicenses(search: string, status: string, plan: string) {
 }
 
 export function AdminLicensesView({ locale }: { locale: Locale }) {
+  const t = getDict(locale)
   const qc = useQueryClient()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
@@ -66,57 +62,69 @@ export function AdminLicensesView({ locale }: { locale: Locale }) {
   return (
     <div className="p-4 md:p-6 space-y-4 pb-24">
       {/* Header */}
-      <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={locale === 'fr' ? 'Client, email, clé...' : 'Customer, email, key...'}
-            className="pl-10 glass-base border-0 h-11"
-          />
-        </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-full md:w-40 glass-base border-0 h-11"><SelectValue /></SelectTrigger>
-          <SelectContent className="glass-floating">
-            <SelectItem value="all">{locale === 'fr' ? 'Tous statuts' : 'All status'}</SelectItem>
-            <SelectItem value="active">{STATUS_CONFIG.active.label[locale as 'fr' | 'en']}</SelectItem>
-            <SelectItem value="suspended">{STATUS_CONFIG.suspended.label[locale as 'fr' | 'en']}</SelectItem>
-            <SelectItem value="revoked">{STATUS_CONFIG.revoked.label[locale as 'fr' | 'en']}</SelectItem>
-            <SelectItem value="expired">{STATUS_CONFIG.expired.label[locale as 'fr' | 'en']}</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={planFilter} onValueChange={setPlanFilter}>
-          <SelectTrigger className="w-full md:w-40 glass-base border-0 h-11"><SelectValue /></SelectTrigger>
-          <SelectContent className="glass-floating">
-            <SelectItem value="all">{locale === 'fr' ? 'Tous plans' : 'All plans'}</SelectItem>
-            <SelectItem value="trial">{PLAN_CONFIG.trial.label[locale as 'fr' | 'en']}</SelectItem>
-            <SelectItem value="essential">{PLAN_CONFIG.essential.label[locale as 'fr' | 'en']}</SelectItem>
-            <SelectItem value="professional">{PLAN_CONFIG.professional.label[locale as 'fr' | 'en']}</SelectItem>
-            <SelectItem value="enterprise">{PLAN_CONFIG.enterprise.label[locale as 'fr' | 'en']}</SelectItem>
-          </SelectContent>
-        </Select>
-        <Button onClick={() => setCreateOpen(true)} className="bg-primary text-primary-foreground h-11">
-          <Plus className="w-4 h-4" /> {locale === 'fr' ? 'Émettre' : 'Issue'}
+      <Group justify="space-between" align="flex-end">
+        <Stack gap={0}>
+          <Text size="lg" fw={600}>{t.admin.licenses.title}</Text>
+          <Text size="xs" c="dimmed">{t.admin.licenses.subtitle}</Text>
+        </Stack>
+        <Button leftSection={<Plus size={16} />} onClick={() => setCreateOpen(true)}>
+          {t.admin.licenses.issue}
         </Button>
-      </div>
+      </Group>
+
+      {/* Filters */}
+      <Group gap="sm" grow>
+        <TextInput
+          leftSection={<Search size={16} />}
+          placeholder={t.admin.licenses.searchPlaceholder}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          variant="filled"
+        />
+        <Select
+          value={statusFilter}
+          onChange={(v) => setStatusFilter(v || 'all')}
+          data={[
+            { value: 'all', label: t.admin.licenses.allStatus },
+            { value: 'active', label: t.admin.licenses.statusActive },
+            { value: 'suspended', label: t.admin.licenses.statusSuspended },
+            { value: 'revoked', label: t.admin.licenses.statusRevoked },
+            { value: 'expired', label: t.admin.licenses.statusExpired },
+          ]}
+          variant="filled"
+          w={{ base: '100%', md: 200 }}
+        />
+        <Select
+          value={planFilter}
+          onChange={(v) => setPlanFilter(v || 'all')}
+          data={[
+            { value: 'all', label: t.admin.licenses.allPlans },
+            { value: 'trial', label: t.admin.licenses.planTrial },
+            { value: 'essential', label: t.admin.licenses.planEssential },
+            { value: 'professional', label: t.admin.licenses.planProfessional },
+            { value: 'enterprise', label: t.admin.licenses.planEnterprise },
+          ]}
+          variant="filled"
+          w={{ base: '100%', md: 200 }}
+        />
+      </Group>
 
       {/* Licenses table */}
       <div className="glass-card rounded-2xl overflow-hidden">
         <div className="grid grid-cols-12 gap-3 px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground border-b border-border/40">
-          <div className="col-span-3">{locale === 'fr' ? 'Clé' : 'Key'}</div>
-          <div className="col-span-3">{locale === 'fr' ? 'Client' : 'Customer'}</div>
-          <div className="col-span-2 hidden md:block">{locale === 'fr' ? 'Plan' : 'Plan'}</div>
-          <div className="col-span-2 hidden md:block">{locale === 'fr' ? 'Instances' : 'Instances'}</div>
-          <div className="col-span-2 hidden md:block">{locale === 'fr' ? 'Expiration' : 'Expires'}</div>
-          <div className="col-span-3 md:col-span-1 text-right">{locale === 'fr' ? 'Statut' : 'Status'}</div>
-          <div className="col-span-2 md:col-span-1 text-right">{locale === 'fr' ? 'Actions' : 'Actions'}</div>
+          <div className="col-span-3">{t.admin.licenses.key}</div>
+          <div className="col-span-3">{t.admin.licenses.customer}</div>
+          <div className="col-span-2 hidden md:block">{t.admin.licenses.plan}</div>
+          <div className="col-span-2 hidden md:block">{t.admin.licenses.instances}</div>
+          <div className="col-span-2 hidden md:block">{t.admin.licenses.expires}</div>
+          <div className="col-span-3 md:col-span-1 text-right">{t.admin.licenses.status}</div>
+          <div className="col-span-2 md:col-span-1 text-right">{t.admin.licenses.actions}</div>
         </div>
-        <ScrollArea className="h-[55vh]">
+        <ScrollArea h={400}>
           {isLoading ? (
             <SkeletonList rows={6} />
           ) : (data?.items || []).length === 0 ? (
-            <EmptyState icon={KeyRound} title={locale === 'fr' ? 'Aucune licence' : 'No licenses'} description={locale === 'fr' ? 'Émettez votre première licence.' : 'Issue your first license.'} />
+            <EmptyState icon={KeyRound} title={t.admin.licenses.noLicenses} description={t.admin.licenses.noLicensesDesc} />
           ) : (
             <AnimatePresence>
               {(data?.items || []).map((lic: any, i: number) => {
@@ -133,23 +141,28 @@ export function AdminLicensesView({ locale }: { locale: Locale }) {
                     <div className="col-span-3 flex items-center gap-2 min-w-0">
                       <KeyRound className="w-3.5 h-3.5 text-primary shrink-0" />
                       <div className="min-w-0">
-                        <p className="text-xs font-mono font-medium truncate">{lic.licenseKey.slice(0, 20)}...</p>
-                        <button
-                          onClick={() => { navigator.clipboard.writeText(lic.licenseKey); toast.success(locale === 'fr' ? 'Clé copiée' : 'Key copied') }}
-                          className="text-[10px] text-muted-foreground hover:text-primary flex items-center gap-0.5"
-                        >
-                          <Copy className="w-2.5 h-2.5" /> {locale === 'fr' ? 'Copier' : 'Copy'}
-                        </button>
+                        <Text size="xs" ff="mono" fw={500} truncate>{lic.licenseKey.slice(0, 20)}...</Text>
+                        <CopyButton value={lic.licenseKey} timeout={2000}>
+                          {({ copied, copy }) => (
+                            <button
+                              onClick={copy}
+                              className="text-[10px] text-muted-foreground hover:text-primary flex items-center gap-0.5"
+                            >
+                              {copied ? <Check size={10} /> : <Copy size={10} />}
+                              {copied ? t.admin.licenses.copied : t.admin.licenses.copy}
+                            </button>
+                          )}
+                        </CopyButton>
                       </div>
                     </div>
                     <div className="col-span-3 min-w-0">
-                      <p className="text-xs font-medium truncate">{lic.customerName}</p>
-                      <p className="text-[10px] text-muted-foreground truncate">{lic.customerEmail}</p>
+                      <Text size="xs" fw={500} truncate>{lic.customerName}</Text>
+                      <Text size="xs" c="dimmed" truncate>{lic.customerEmail}</Text>
                     </div>
                     <div className="col-span-2 hidden md:flex items-center">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${planCfg.color}`}>
-                        {planCfg.label[locale as 'fr' | 'en']}
-                      </span>
+                      <Badge color={planCfg.color} variant="light" size="sm">
+                        {(t.admin.licenses as any)[planCfg.labelKey]} · {PLAN_PRICES[lic.plan] || 0}€{t.admin.licenses.perMonth}
+                      </Badge>
                     </div>
                     <div className="col-span-2 hidden md:flex items-center text-xs">
                       <span className="font-mono">{lic._count?.instances || 0}</span>
@@ -159,18 +172,16 @@ export function AdminLicensesView({ locale }: { locale: Locale }) {
                       {formatDate(lic.expiresAt, locale)}
                     </div>
                     <div className="col-span-3 md:col-span-1 flex items-center justify-end">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${statusCfg.color}`}>
-                        {statusCfg.label[locale as 'fr' | 'en']}
-                      </span>
+                      <Badge color={statusCfg.color} variant="light" size="sm">
+                        {(t.admin.licenses as any)[statusCfg.labelKey]}
+                      </Badge>
                     </div>
-                    <div className="col-span-2 md:col-span-1 flex items-center justify-end gap-1">
-                      <button
-                        onClick={() => setDetailId(lic.id)}
-                        className="p-1 rounded hover:bg-accent/50 text-muted-foreground hover:text-primary transition-colors"
-                        title={locale === 'fr' ? 'Détails' : 'Details'}
-                      >
-                        <Eye className="w-3.5 h-3.5" />
-                      </button>
+                    <div className="col-span-2 md:col-span-1 flex items-center justify-end">
+                      <Tooltip label={t.admin.licenses.details}>
+                        <ActionIcon variant="subtle" onClick={() => setDetailId(lic.id)}>
+                          <Eye size={14} />
+                        </ActionIcon>
+                      </Tooltip>
                     </div>
                   </motion.div>
                 )
@@ -187,6 +198,7 @@ export function AdminLicensesView({ locale }: { locale: Locale }) {
 }
 
 function CreateLicenseDialog({ open, onOpenChange, locale, onSuccess }: any) {
+  const t = getDict(locale)
   const [form, setForm] = useState({
     customerName: '',
     customerEmail: '',
@@ -203,7 +215,7 @@ function CreateLicenseDialog({ open, onOpenChange, locale, onSuccess }: any) {
 
   const handleSubmit = async () => {
     if (!form.customerName || !form.customerEmail) {
-      toast.error(locale === 'fr' ? 'Nom et email requis' : 'Name and email required')
+      notifications.show({ title: t.common.error || 'Error', message: t.admin.licenses.customerName + ' + ' + t.admin.licenses.customerEmail, color: 'red' })
       return
     }
     setSubmitting(true)
@@ -214,117 +226,126 @@ function CreateLicenseDialog({ open, onOpenChange, locale, onSuccess }: any) {
         body: JSON.stringify({
           ...form,
           modules: ['scheduling', 'ehr', 'billing', 'prescriptions', 'labs', 'documents', 'telemedicine', 'audit', 'inventory', 'triage', 'sustainability', 'ai_scribe'],
-          // adminEmail derived from session on server
-
         }),
       })
       if (!res.ok) throw new Error('Failed')
       const license = await res.json()
       setCreatedKey(license.licenseKey)
-      toast.success(locale === 'fr' ? 'Licence émise' : 'License issued')
+      notifications.show({ title: t.admin.licenses.issued, message: license.licenseKey, color: 'green' })
       onSuccess()
     } catch (e) {
-      toast.error((e as Error).message)
+      notifications.show({ title: t.common.error || 'Error', message: (e as Error).message, color: 'red' })
     } finally {
       setSubmitting(false)
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) setCreatedKey(null); onOpenChange(o) }}>
-      <DialogContent className="glass-floating max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <KeyRound className="w-5 h-5 text-primary" />
-            {locale === 'fr' ? 'Émettre une licence' : 'Issue a license'}
-          </DialogTitle>
-          <DialogDescription>{locale === 'fr' ? 'Crée une nouvelle licence de bureau' : 'Creates a new desktop license'}</DialogDescription>
-        </DialogHeader>
-
-        {createdKey ? (
-          <div className="space-y-4 py-2">
-            <div className="p-4 rounded-lg bg-success/10 border border-success/30 text-center">
-              <Check className="w-8 h-8 text-success mx-auto mb-2" />
-              <p className="text-sm font-medium mb-2">{locale === 'fr' ? 'Licence émise!' : 'License issued!'}</p>
-              <p className="text-xs text-muted-foreground mb-3">{locale === 'fr' ? 'Communiquez cette clé au client:' : 'Communicate this key to the customer:'}</p>
-              <div className="p-3 rounded-lg glass-base font-mono text-sm break-all">{createdKey}</div>
-              <Button
-                onClick={() => { navigator.clipboard.writeText(createdKey); toast.success(locale === 'fr' ? 'Copié' : 'Copied') }}
-                className="mt-3"
-                size="sm"
-              >
-                <Copy className="w-3.5 h-3.5" /> {locale === 'fr' ? 'Copier la clé' : 'Copy key'}
-              </Button>
-            </div>
+    <Modal opened={open} onClose={() => { setCreatedKey(null); onOpenChange(false) }} title={
+      <Group gap="sm">
+        <KeyRound size={20} className="text-primary" />
+        <Text fw={600}>{t.admin.licenses.issueTitle}</Text>
+      </Group>
+    } size="lg">
+      {createdKey ? (
+        <Stack align="center" py="md">
+          <div className="w-16 h-16 rounded-2xl bg-success/15 flex items-center justify-center">
+            <Check className="w-8 h-8 text-success" />
           </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-3 py-2">
-            <div className="space-y-1.5 col-span-2">
-              <Label>{locale === 'fr' ? 'Nom du client' : 'Customer name'} *</Label>
-              <Input value={form.customerName} onChange={(e) => setForm({ ...form, customerName: e.target.value })} className="glass-base border-0" placeholder="Cabinet Médical..." />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Email *</Label>
-              <Input type="email" value={form.customerEmail} onChange={(e) => setForm({ ...form, customerEmail: e.target.value })} className="glass-base border-0" placeholder="contact@cabinet.fr" />
-            </div>
-            <div className="space-y-1.5">
-              <Label>{locale === 'fr' ? 'Organisation' : 'Organization'}</Label>
-              <Input value={form.customerOrg} onChange={(e) => setForm({ ...form, customerOrg: e.target.value })} className="glass-base border-0" />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Plan</Label>
-              <Select value={form.plan} onValueChange={(v) => {
+          <Text fw={600} size="lg">{t.admin.licenses.issued}</Text>
+          <Text size="sm" c="dimmed" ta="center">{t.admin.licenses.communicate}</Text>
+          <div className="p-3 rounded-lg glass-base font-mono text-sm break-all w-full">{createdKey}</div>
+          <CopyButton value={createdKey} timeout={2000}>
+            {({ copied, copy }) => (
+              <Button onClick={copy} leftSection={copied ? <Check size={16} /> : <Copy size={16} />}>
+                {t.admin.licenses.copyKey}
+              </Button>
+            )}
+          </CopyButton>
+        </Stack>
+      ) : (
+        <Stack gap="sm">
+          <TextInput
+            label={`${t.admin.licenses.customerName} *`}
+            value={form.customerName}
+            onChange={(e) => setForm({ ...form, customerName: e.target.value })}
+            variant="filled"
+          />
+          <Group grow>
+            <TextInput
+              label={`${t.admin.licenses.customerEmail} *`}
+              type="email"
+              value={form.customerEmail}
+              onChange={(e) => setForm({ ...form, customerEmail: e.target.value })}
+              variant="filled"
+            />
+            <TextInput
+              label={t.admin.licenses.customerOrg}
+              value={form.customerOrg}
+              onChange={(e) => setForm({ ...form, customerOrg: e.target.value })}
+              variant="filled"
+            />
+          </Group>
+          <Group grow>
+            <Select
+              label={t.admin.licenses.plan}
+              value={form.plan}
+              onChange={(v) => {
                 const config = PLAN_CONFIG[v as keyof typeof PLAN_CONFIG]
                 setForm({
                   ...form,
-                  plan: v,
+                  plan: v || 'professional',
                   maxDevices: v === 'trial' ? 1 : v === 'essential' ? 1 : v === 'professional' ? 3 : 10,
                   maxPractitioners: v === 'trial' ? 3 : v === 'essential' ? 5 : v === 'professional' ? 15 : 100,
                 })
-              }}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent className="glass-floating">
-                  {Object.entries(PLAN_CONFIG).map(([k, v]) => (
-                    <SelectItem key={k} value={k}>{v.label[locale as 'fr' | 'en']} ({v.price}€/mois)</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label>{locale === 'fr' ? 'Durée (jours)' : 'Duration (days)'}</Label>
-              <Input type="number" value={form.durationDays} onChange={(e) => setForm({ ...form, durationDays: parseInt(e.target.value) })} className="glass-base border-0" />
-            </div>
-            <div className="space-y-1.5">
-              <Label>{locale === 'fr' ? 'Postes max' : 'Max devices'}</Label>
-              <Input type="number" value={form.maxDevices} onChange={(e) => setForm({ ...form, maxDevices: parseInt(e.target.value) })} className="glass-base border-0" />
-            </div>
-            <div className="space-y-1.5">
-              <Label>{locale === 'fr' ? 'Praticiens max' : 'Max practitioners'}</Label>
-              <Input type="number" value={form.maxPractitioners} onChange={(e) => setForm({ ...form, maxPractitioners: parseInt(e.target.value) })} className="glass-base border-0" />
-            </div>
-          </div>
-        )}
-
-        <DialogFooter>
-          {!createdKey && (
-            <>
-              <Button variant="outline" onClick={() => onOpenChange(false)}>{locale === 'fr' ? 'Annuler' : 'Cancel'}</Button>
-              <Button onClick={handleSubmit} disabled={submitting}>
-                {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                {locale === 'fr' ? 'Émettre' : 'Issue'}
-              </Button>
-            </>
-          )}
-          {createdKey && <Button onClick={() => { onOpenChange(false); setCreatedKey(null) }}>{locale === 'fr' ? 'Fermer' : 'Close'}</Button>}
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+              }}
+              data={[
+                { value: 'trial', label: `${t.admin.licenses.planTrial} (0€)` },
+                { value: 'essential', label: `${t.admin.licenses.planEssential} (49€)` },
+                { value: 'professional', label: `${t.admin.licenses.planProfessional} (99€)` },
+                { value: 'enterprise', label: `${t.admin.licenses.planEnterprise} (299€)` },
+              ]}
+              variant="filled"
+            />
+            <TextInput
+              label={t.admin.licenses.duration}
+              type="number"
+              value={form.durationDays}
+              onChange={(e) => setForm({ ...form, durationDays: parseInt(e.target.value) })}
+              variant="filled"
+            />
+          </Group>
+          <Group grow>
+            <TextInput
+              label={t.admin.licenses.maxDevices}
+              type="number"
+              value={form.maxDevices}
+              onChange={(e) => setForm({ ...form, maxDevices: parseInt(e.target.value) })}
+              variant="filled"
+            />
+            <TextInput
+              label={t.admin.licenses.maxPractitioners}
+              type="number"
+              value={form.maxPractitioners}
+              onChange={(e) => setForm({ ...form, maxPractitioners: parseInt(e.target.value) })}
+              variant="filled"
+            />
+          </Group>
+          <Group justify="flex-end" mt="md">
+            <Button variant="default" onClick={() => onOpenChange(false)}>{t.admin.licenses.cancel}</Button>
+            <Button onClick={handleSubmit} loading={submitting}>{t.admin.licenses.issue}</Button>
+          </Group>
+        </Stack>
+      )}
+    </Modal>
   )
 }
 
 function LicenseDetailDialog({ id, onClose, locale, onChanged }: any) {
+  const t = getDict(locale)
   const qc = useQueryClient()
   const [acting, setActing] = useState<string | null>(null)
+  const [togglingFlag, setTogglingFlag] = useState<string | null>(null)
 
   const { data: license, isLoading } = useQuery({
     queryKey: ['admin-license', id],
@@ -333,8 +354,6 @@ function LicenseDetailDialog({ id, onClose, locale, onChanged }: any) {
       return res.json()
     },
   })
-
-  const [togglingFlag, setTogglingFlag] = useState<string | null>(null)
 
   const toggleFeatureFlag = async (flagId: string, enabled: boolean) => {
     setTogglingFlag(flagId)
@@ -345,10 +364,13 @@ function LicenseDetailDialog({ id, onClose, locale, onChanged }: any) {
         body: JSON.stringify({ enabled }),
       })
       if (!res.ok) throw new Error('Failed')
-      toast.success(locale === 'fr' ? `Module ${enabled ? 'activé' : 'désactivé'}` : `Module ${enabled ? 'enabled' : 'disabled'}`)
+      notifications.show({
+        message: `${enabled ? t.admin.licenses.moduleEnabled : t.admin.licenses.moduleDisabled}`,
+        color: 'green',
+      })
       qc.invalidateQueries({ queryKey: ['admin-license', id] })
     } catch (e) {
-      toast.error((e as Error).message)
+      notifications.show({ message: (e as Error).message, color: 'red' })
     } finally {
       setTogglingFlag(null)
     }
@@ -363,137 +385,118 @@ function LicenseDetailDialog({ id, onClose, locale, onChanged }: any) {
         body: JSON.stringify({ action, ...extra }),
       })
       if (!res.ok) throw new Error('Failed')
-      toast.success(locale === 'fr' ? `Action: ${action}` : `Action: ${action}`)
+      notifications.show({ message: action, color: 'green' })
       onChanged()
       qc.invalidateQueries({ queryKey: ['admin-license', id] })
     } catch (e) {
-      toast.error((e as Error).message)
+      notifications.show({ message: (e as Error).message, color: 'red' })
     } finally {
       setActing(null)
     }
   }
 
   return (
-    <Dialog open={true} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="glass-floating max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <KeyRound className="w-5 h-5 text-primary" />
-            {license?.customerName || '...'}
-          </DialogTitle>
-          <DialogDescription className="font-mono">{license?.licenseKey}</DialogDescription>
-        </DialogHeader>
-
-        {isLoading || !license ? (
-          <div className="py-8 text-center text-sm text-muted-foreground">{locale === 'fr' ? 'Chargement…' : 'Loading...'}</div>
-        ) : (
-          <div className="space-y-4">
-            {/* Status + plan */}
-            <div className="flex items-center gap-2">
-              <span className={`inline-flex items-center px-2 py-1 rounded-full text-[11px] font-medium ${STATUS_CONFIG[license.status as keyof typeof STATUS_CONFIG]?.color}`}>
-                {STATUS_CONFIG[license.status as keyof typeof STATUS_CONFIG]?.label[locale as 'fr' | 'en']}
-              </span>
-              <span className={`inline-flex items-center px-2 py-1 rounded-full text-[11px] font-medium ${PLAN_CONFIG[license.plan as keyof typeof PLAN_CONFIG]?.color}`}>
-                {PLAN_CONFIG[license.plan as keyof typeof PLAN_CONFIG]?.label[locale as 'fr' | 'en']} · {PLAN_CONFIG[license.plan as keyof typeof PLAN_CONFIG]?.price}€/mois
-              </span>
-            </div>
-
-            {/* Info grid */}
-            <div className="grid grid-cols-2 gap-3 text-xs">
-              <div className="p-3 rounded-lg glass-base">
-                <p className="text-[10px] uppercase font-semibold text-muted-foreground">Email</p>
-                <p className="truncate">{license.customerEmail}</p>
-              </div>
-              <div className="p-3 rounded-lg glass-base">
-                <p className="text-[10px] uppercase font-semibold text-muted-foreground">{locale === 'fr' ? 'Pays' : 'Country'}</p>
-                <p>{license.customerCountry}</p>
-              </div>
-              <div className="p-3 rounded-lg glass-base">
-                <p className="text-[10px] uppercase font-semibold text-muted-foreground">{locale === 'fr' ? 'Postes max' : 'Max devices'}</p>
-                <p className="font-mono">{license.maxDevices}</p>
-              </div>
-              <div className="p-3 rounded-lg glass-base">
-                <p className="text-[10px] uppercase font-semibold text-muted-foreground">{locale === 'fr' ? 'Praticiens max' : 'Max practitioners'}</p>
-                <p className="font-mono">{license.maxPractitioners}</p>
-              </div>
-              <div className="p-3 rounded-lg glass-base">
-                <p className="text-[10px] uppercase font-semibold text-muted-foreground">{locale === 'fr' ? 'Émise le' : 'Issued'}</p>
-                <p>{formatDate(license.issuedAt, locale)}</p>
-              </div>
-              <div className="p-3 rounded-lg glass-base">
-                <p className="text-[10px] uppercase font-semibold text-muted-foreground">{locale === 'fr' ? 'Expire le' : 'Expires'}</p>
-                <p>{formatDate(license.expiresAt, locale)}</p>
-              </div>
-            </div>
-
-            {/* Instances */}
-            {license.instances?.length > 0 && (
+    <Modal opened={true} onClose={onClose} size="xl">
+      <LoadingOverlay visible={isLoading} />
+      {license && (
+        <Stack gap="md">
+          {/* Header */}
+          <Group justify="space-between">
+            <Group>
+              <KeyRound size={20} className="text-primary" />
               <div>
-                <p className="text-[10px] uppercase font-semibold text-muted-foreground mb-2">{locale === 'fr' ? 'Instances' : 'Instances'} ({license.instances.length})</p>
-                <div className="space-y-1.5">
-                  {license.instances.map((inst: any) => (
-                    <div key={inst.id} className="flex items-center gap-2 p-2 rounded-lg glass-base text-xs">
-                      <div className={`w-2 h-2 rounded-full ${inst.status === 'active' ? 'bg-success' : inst.status === 'blocked' ? 'bg-destructive' : 'bg-muted-foreground'}`} />
-                      <span className="flex-1 truncate">{inst.hostname || 'Unknown'}</span>
-                      <span className="font-mono text-[10px] text-muted-foreground">{inst.appVersion}</span>
-                      <span className="text-[10px] text-muted-foreground">{formatDate(inst.lastSeenAt, locale)}</span>
-                    </div>
-                  ))}
-                </div>
+                <Text fw={600}>{license.customerName}</Text>
+                <Text size="xs" ff="mono" c="dimmed">{license.licenseKey}</Text>
               </div>
-            )}
+            </Group>
+            <Group gap="xs">
+              <Badge color={STATUS_CONFIG[license.status as keyof typeof STATUS_CONFIG]?.color || 'gray'} variant="light">
+                {(t.admin.licenses as any)[STATUS_CONFIG[license.status as keyof typeof STATUS_CONFIG]?.labelKey || 'statusActive']}
+              </Badge>
+              <Badge color={PLAN_CONFIG[license.plan as keyof typeof PLAN_CONFIG]?.color || 'gray'} variant="light">
+                {(t.admin.licenses as any)[PLAN_CONFIG[license.plan as keyof typeof PLAN_CONFIG]?.labelKey || 'planProfessional']}
+              </Badge>
+            </Group>
+          </Group>
 
-            {/* Feature flags — toggleable */}
-            {license.featureFlags?.length > 0 && (
-              <div>
-                <p className="text-[10px] uppercase font-semibold text-muted-foreground mb-2">
-                  {locale === 'fr' ? 'Modules (cliquer pour activer/désactiver)' : 'Modules (click to toggle)'}
-                </p>
-                <div className="flex flex-wrap gap-1.5">
-                  {license.featureFlags.map((f: any) => (
-                    <button
-                      key={f.id}
-                      onClick={() => toggleFeatureFlag(f.id, !f.enabled)}
-                      disabled={togglingFlag === f.id}
-                      className={`px-2 py-1 rounded-full text-[10px] font-medium transition-colors ${
-                        f.enabled
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted text-muted-foreground hover:bg-accent'
-                      }`}
-                    >
-                      {togglingFlag === f.id ? '...' : f.flagKey}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Actions */}
-            <div className="flex flex-wrap gap-2 pt-2 border-t border-border/30">
-              {license.status === 'active' && (
-                <>
-                  <Button size="sm" variant="outline" onClick={() => doAction('extend', { days: 30 })} disabled={acting === 'extend'}>
-                    {acting === 'extend' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Clock className="w-3.5 h-3.5" />}
-                    {locale === 'fr' ? 'Prolonger +30j' : 'Extend +30d'}
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => doAction('suspend')} disabled={acting === 'suspend'}>
-                    <Ban className="w-3.5 h-3.5" /> {locale === 'fr' ? 'Suspendre' : 'Suspend'}
-                  </Button>
-                  <Button size="sm" variant="destructive" onClick={() => doAction('revoke', { reason: 'Revoked by admin' })} disabled={acting === 'revoke'}>
-                    <AlertTriangle className="w-3.5 h-3.5" /> {locale === 'fr' ? 'Révoquer' : 'Revoke'}
-                  </Button>
-                </>
-              )}
-              {(license.status === 'suspended' || license.status === 'revoked' || license.status === 'expired') && (
-                <Button size="sm" onClick={() => doAction('reactivate')} disabled={acting === 'reactivate'}>
-                  {acting === 'reactivate' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
-                  {locale === 'fr' ? 'Réactiver' : 'Reactivate'}
-                </Button>
-              )}
-            </div>
+          {/* Info grid */}
+          <div className="grid grid-cols-2 gap-3">
+            <InfoBox label={t.admin.licenses.customerEmail} value={license.customerEmail} />
+            <InfoBox label={t.admin.licenses.country} value={license.customerCountry} />
+            <InfoBox label={t.admin.licenses.maxDevices} value={String(license.maxDevices)} mono />
+            <InfoBox label={t.admin.licenses.maxPractitioners} value={String(license.maxPractitioners)} mono />
+            <InfoBox label={t.admin.licenses.issuedAt} value={formatDate(license.issuedAt, locale)} />
+            <InfoBox label={t.admin.licenses.expires} value={formatDate(license.expiresAt, locale)} />
           </div>
-        )}
-      </DialogContent>
-    </Dialog>
+
+          {/* Instances */}
+          {license.instances?.length > 0 && (
+            <Stack gap="xs">
+              <Text size="xs" fw={600} c="dimmed" tt="uppercase">{t.admin.licenses.instances} ({license.instances.length})</Text>
+              {license.instances.map((inst: any) => (
+                <Group key={inst.id} gap="sm" className="p-2 rounded-lg glass-base">
+                  <div className={`w-2 h-2 rounded-full ${inst.status === 'active' ? 'bg-success' : inst.status === 'blocked' ? 'bg-destructive' : 'bg-muted-foreground'}`} />
+                  <Text size="xs" className="flex-1 truncate">{inst.hostname || 'Unknown'}</Text>
+                  <Text size="xs" ff="mono" c="dimmed">{inst.appVersion}</Text>
+                  <Text size="xs" c="dimmed">{formatDate(inst.lastSeenAt, locale)}</Text>
+                </Group>
+              ))}
+            </Stack>
+          )}
+
+          {/* Feature flags */}
+          {license.featureFlags?.length > 0 && (
+            <Stack gap="xs">
+              <Text size="xs" fw={600} c="dimmed" tt="uppercase">{t.admin.licenses.modules}</Text>
+              <Group gap="xs">
+                {license.featureFlags.map((f: any) => (
+                  <button
+                    key={f.id}
+                    onClick={() => toggleFeatureFlag(f.id, !f.enabled)}
+                    disabled={togglingFlag === f.id}
+                    className={`px-2 py-1 rounded-full text-[10px] font-medium transition-colors ${
+                      f.enabled ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-accent'
+                    }`}
+                  >
+                    {togglingFlag === f.id ? '...' : f.flagKey}
+                  </button>
+                ))}
+              </Group>
+            </Stack>
+          )}
+
+          {/* Actions */}
+          <Group gap="xs" className="pt-2 border-t border-border/30">
+            {license.status === 'active' && (
+              <>
+                <Button variant="default" size="xs" onClick={() => doAction('extend', { days: 30 })} loading={acting === 'extend'} leftSection={<Clock size={14} />}>
+                  {t.admin.licenses.extend}
+                </Button>
+                <Button variant="default" size="xs" onClick={() => doAction('suspend')} loading={acting === 'suspend'} leftSection={<Ban size={14} />}>
+                  {t.admin.licenses.suspend}
+                </Button>
+                <Button variant="filled" color="red" size="xs" onClick={() => doAction('revoke', { reason: 'Revoked by admin' })} loading={acting === 'revoke'} leftSection={<AlertTriangle size={14} />}>
+                  {t.admin.licenses.revoke}
+                </Button>
+              </>
+            )}
+            {(license.status === 'suspended' || license.status === 'revoked' || license.status === 'expired') && (
+              <Button size="xs" onClick={() => doAction('reactivate')} loading={acting === 'reactivate'} leftSection={<Play size={14} />}>
+                {t.admin.licenses.reactivate}
+              </Button>
+            )}
+          </Group>
+        </Stack>
+      )}
+    </Modal>
+  )
+}
+
+function InfoBox({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
+  return (
+    <div className="p-3 rounded-lg glass-base">
+      <Text size="10px" fw={600} c="dimmed" tt="uppercase">{label}</Text>
+      <Text size="sm" ff={mono ? 'mono' : 'sans'} className="truncate">{value}</Text>
+    </div>
   )
 }

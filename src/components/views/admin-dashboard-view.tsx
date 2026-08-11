@@ -1,7 +1,7 @@
 'use client'
 
 import { useApp } from '@/lib/store'
-import { getDict, formatCurrency, type Locale } from '@/lib/i18n'
+import { getDict, formatCurrency, formatDate, type Locale } from '@/lib/i18n'
 import { motion } from 'framer-motion'
 import { useQuery } from '@tanstack/react-query'
 import {
@@ -179,7 +179,7 @@ export function AdminDashboardView({ locale }: { locale: Locale }) {
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.5 0.02 250 / 0.15)" vertical={false} />
-              <XAxis dataKey="date" tick={{ fontSize: 11 }} stroke="oklch(0.5 0.02 250 / 0.6)" tickFormatter={(d) => new Date(d).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', { weekday: 'short' })} />
+              <XAxis dataKey="date" tick={{ fontSize: 11 }} stroke="oklch(0.5 0.02 250 / 0.6)" tickFormatter={(d) => formatDate(d as string, locale)} />
               <YAxis tick={{ fontSize: 11 }} stroke="oklch(0.5 0.02 250 / 0.6)" />
               <Tooltip
                 contentStyle={{
@@ -325,7 +325,7 @@ export function AdminDashboardView({ locale }: { locale: Locale }) {
                   </div>
                   <div className="text-right shrink-0">
                     <p className="text-[10px] text-muted-foreground font-mono">{inst.appVersion}</p>
-                    <p className="text-[10px] text-muted-foreground">{new Date(inst.lastSeenAt).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US')}</p>
+                    <p className="text-[10px] text-muted-foreground">{formatDate(inst.lastSeenAt, locale)}</p>
                   </div>
                 </div>
               )
@@ -360,7 +360,7 @@ export function AdminDashboardView({ locale }: { locale: Locale }) {
                   <p className="text-[10px] text-muted-foreground truncate">{action.adminEmail}</p>
                 </div>
                 <span className="text-[10px] text-muted-foreground font-mono shrink-0">
-                  {new Date(action.createdAt).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US')}
+                  {formatDate(action.createdAt, locale)}
                 </span>
               </div>
             ))}
@@ -388,7 +388,7 @@ export function AdminDashboardView({ locale }: { locale: Locale }) {
           <span className="text-muted-foreground">·</span>
           <span className="flex items-center gap-1 text-muted-foreground">
             <Zap className="w-3 h-3" />
-            <AnimatedNumber value={stats.telemetryEvents24h} /> {locale === 'fr' ? 'événements 24h' : 'events 24h'}
+            <AnimatedNumber value={stats.telemetryEvents24h} /> {t.admin.overview.events24h}
           </span>
         </div>
       </motion.div>

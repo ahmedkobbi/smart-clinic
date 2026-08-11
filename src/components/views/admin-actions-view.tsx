@@ -1,15 +1,16 @@
 'use client'
 
 import { useApp } from '@/lib/store'
-import { type Locale, formatDateTime } from '@/lib/i18n'
+import { getDict, formatDateTime, type Locale } from '@/lib/i18n'
 import { motion } from 'framer-motion'
 import { useQuery } from '@tanstack/react-query'
+import {
+  Text, Group, Badge, ScrollArea,
+} from '@mantine/core'
 import {
   Activity, KeyRound, Ban, Play, Clock, Zap, LogIn,
   AlertTriangle, CheckCircle2, Eye,
 } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { SkeletonList } from '@/components/common/skeleton'
 import { EmptyState } from '@/components/common/empty-state'
 
@@ -27,16 +28,16 @@ const ACTION_ICONS: Record<string, any> = {
 }
 
 const ACTION_COLORS: Record<string, string> = {
-  issue_license: 'text-success bg-success/10',
-  revoke_license: 'text-destructive bg-destructive/10',
-  suspend_license: 'text-warning bg-warning/10',
-  reactivate_license: 'text-success bg-success/10',
-  extend_license: 'text-info bg-info/10',
-  block_instance: 'text-destructive bg-destructive/10',
-  unblock_instance: 'text-success bg-success/10',
-  publish_update: 'text-glass-warm bg-glass-warm/10',
-  admin_login: 'text-info bg-info/10',
-  lease_issued: 'text-muted-foreground bg-muted',
+  issue_license: 'green',
+  revoke_license: 'red',
+  suspend_license: 'orange',
+  reactivate_license: 'green',
+  extend_license: 'blue',
+  block_instance: 'red',
+  unblock_instance: 'green',
+  publish_update: 'grape',
+  admin_login: 'blue',
+  lease_issued: 'gray',
 }
 
 async function fetchActions() {
@@ -47,6 +48,7 @@ async function fetchActions() {
 }
 
 export function AdminActionsView({ locale }: { locale: Locale }) {
+  const t = getDict(locale)
   const { data: actions = [], isLoading } = useQuery({
     queryKey: ['admin-actions'],
     queryFn: fetchActions,
@@ -55,28 +57,32 @@ export function AdminActionsView({ locale }: { locale: Locale }) {
 
   return (
     <div className="p-4 md:p-6 space-y-4 pb-24">
-      <div>
-        <h2 className="text-lg font-semibold">{locale === 'fr' ? 'Journal d\'audit administrateur' : 'Admin audit log'}</h2>
-        <p className="text-xs text-muted-foreground">{locale === 'fr' ? 'Toutes les actions administrateur sont journalisées' : 'All admin actions are logged'}</p>
-      </div>
+      {/* Header */}
+      <Group justify="space-between" align="flex-end">
+        <div>
+          <Text size="lg" fw={600}>{t.admin.actions.title}</Text>
+          <Text size="xs" c="dimmed">{t.admin.actions.subtitle}</Text>
+        </div>
+      </Group>
 
+      {/* Actions table */}
       <div className="glass-card rounded-2xl overflow-hidden">
         <div className="grid grid-cols-12 gap-3 px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground border-b border-border/40">
-          <div className="col-span-2">{locale === 'fr' ? 'Action' : 'Action'}</div>
-          <div className="col-span-3">{locale === 'fr' ? 'Admin' : 'Admin'}</div>
-          <div className="col-span-3 hidden md:block">{locale === 'fr' ? 'Cible' : 'Target'}</div>
+          <div className="col-span-3">{t.admin.actions.action}</div>
+          <div className="col-span-3">{t.admin.actions.admin}</div>
+          <div className="col-span-3 hidden md:block">{t.admin.actions.target}</div>
           <div className="col-span-2 hidden md:block">IP</div>
-          <div className="col-span-2 md:col-span-2 text-right">{locale === 'fr' ? 'Date' : 'Date'}</div>
+          <div className="col-span-2 md:col-span-1 text-right">{t.admin.actions.date}</div>
         </div>
-        <ScrollArea className="h-[60vh]">
+        <ScrollArea h={500}>
           {isLoading ? (
             <SkeletonList rows={8} />
           ) : actions.length === 0 ? (
-            <EmptyState icon={Activity} title={locale === 'fr' ? 'Aucune action' : 'No actions'} description={locale === 'fr' ? 'Aucune action administrateur enregistrée.' : 'No admin actions recorded.'} />
+            <EmptyState icon={Activity} title={t.admin.actions.noActions} description={t.admin.actions.noActionsDesc} />
           ) : (
             actions.map((action: any, i: number) => {
               const Icon = ACTION_ICONS[action.action] || Eye
-              const colorClass = ACTION_COLORS[action.action] || 'text-muted-foreground bg-muted'
+              const color = ACTION_COLORS[action.action] || 'gray'
               return (
                 <motion.div
                   key={action.id}
@@ -85,24 +91,24 @@ export function AdminActionsView({ locale }: { locale: Locale }) {
                   transition={{ delay: i * 20 }}
                   className="grid grid-cols-12 gap-3 px-4 py-3 hover:bg-accent/30 transition-colors border-b border-border/20"
                 >
-                  <div className="col-span-2 flex items-center gap-2">
-                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${colorClass}`}>
-                      <Icon className="w-3.5 h-3.5" />
+                  <div className="col-span-3 flex items-center gap-2">
+                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 bg-${color}-500/15`}>
+                      <Icon className={`w-3.5 h-3.5 text-${color}-500`} />
                     </div>
-                    <span className="text-xs font-medium truncate">{action.action.replace(/_/g, ' ')}</span>
+                    <Text size="xs" fw={500} truncate>{action.action.replace(/_/g, ' ')}</Text>
                   </div>
                   <div className="col-span-3 flex items-center">
-                    <span className="text-xs truncate">{action.adminEmail}</span>
+                    <Text size="xs" truncate>{action.adminEmail}</Text>
                   </div>
                   <div className="col-span-3 hidden md:flex items-center gap-2">
-                    {action.target && <Badge variant="outline" className="text-[9px]">{action.target}</Badge>}
-                    {action.targetId && <code className="text-[10px] font-mono text-muted-foreground truncate">{action.targetId.slice(-8)}</code>}
+                    {action.target && <Badge variant="outline" size="sm">{action.target}</Badge>}
+                    {action.targetId && <Text size="10px" ff="mono" c="dimmed" truncate>{action.targetId.slice(-8)}</Text>}
                   </div>
                   <div className="col-span-2 hidden md:flex items-center">
-                    <code className="text-[10px] font-mono text-muted-foreground">{action.ipAddress || '—'}</code>
+                    <Text size="10px" ff="mono" c="dimmed">{action.ipAddress || '—'}</Text>
                   </div>
-                  <div className="col-span-2 md:col-span-2 flex items-center justify-end">
-                    <span className="text-[10px] text-muted-foreground font-mono">{formatDateTime(action.createdAt, locale)}</span>
+                  <div className="col-span-2 md:col-span-1 flex items-center justify-end">
+                    <Text size="10px" ff="mono" c="dimmed">{formatDateTime(action.createdAt, locale)}</Text>
                   </div>
                 </motion.div>
               )
