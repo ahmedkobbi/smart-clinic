@@ -1,0 +1,372 @@
+// Smart Clinic — Prisma Schema
+// Enterprise Clinical Practice Management Platform
+// Multi-tenant (SaaS + On-Premise) — single codebase, two deployment targets
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Identity & Tenancy
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Tenant {
+  id            String   @id @default(cuid())
+  slug          String   @unique
+  legalName     String
+  displayName   String
+  specialty     String   // general | dental | physio | psych | derm | ophthal | gyn | ped | multi | vet
+  country       String   @default("FR")
+  timezone      String   @default("Europe/Paris")
+  locale        String   @default("fr")
+  addressLine   String?
+  postalCode    String?
+  city          String?
+  phone         String?
+  email         String?
+  siret         String?  // French company identifier
+  adeli         String?  // French health professional identifier
+  plan          String   @default("cloud-saas") // cloud-saas | on-prem
+  densityMode   String   @default("comfortable") // comfortable | compact
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  users         User[]
+  patients      Patient[]
+  practitioners Practitioner[]
+  appointments  Appointment[]
+  consultations Consultation[]
+  prescriptions Prescription[]
+  invoices      Invoice[]
+  auditLogs     AuditLog[]
+  branches      Branch[]
+  resources     Resource[]
+  consentRecords ConsentRecord[]
+  inventoryItems InventoryItem[]
+}
+
+model Branch {
+  id          String   @id @default(cuid())
+  tenantId    String
+  name        String
+  addressLine String?
+  postalCode  String?
+  city        String?
+  phone       String?
+  createdAt   DateTime @default(now())
+
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+  resources   Resource[]
+  practitioners Practitioner[]
+}
+
+model User {
+  id            String   @id @default(cuid())
+  tenantId      String
+  email         String   @unique
+  name          String
+  role          String   @default("admin") // admin | practitioner | receptionist | nurse | billing | auditor
+  passwordHash  String
+  locale        String   @default("fr")
+  active        Boolean  @default(true)
+  lastLoginAt   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  auditLogs     AuditLog[]
+}
+
+model Practitioner {
+  id            String   @id @default(cuid())
+  tenantId      String
+  branchId      String?
+  name          String
+  specialty     String   // general | dental | physio | psych | derm | ophthal | gyn | ped
+  rpps          String?  // French practitioner identifier (Répertoire Partagé des Professionnels de Santé)
+  adeli         String?
+  color         String   @default("#0ea5e9") // calendar color
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+
+  tenant        Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch        Branch?    @relation(fields: [branchId], references: [id])
+  appointments  Appointment[]
+  consultations Consultation[]
+  prescriptions Prescription[]
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Scheduling & Resources
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Resource {
+  id          String   @id @default(cuid())
+  tenantId    String
+  branchId    String?
+  name        String
+  type        String   // room | equipment | chair
+  capacity    Int      @default(1)
+  active      Boolean  @default(true)
+
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch      Branch?  @relation(fields: [branchId], references: [id])
+  appointments Appointment[]
+}
+
+model Appointment {
+  id             String   @id @default(cuid())
+  tenantId       String
+  branchId       String?
+  patientId      String
+  practitionerId String
+  resourceId     String?
+  startAt        DateTime
+  endAt          DateTime
+  status         String   @default("scheduled") // scheduled | confirmed | checked_in | in_session | completed | cancelled | no_show
+  type           String   @default("consultation") // consultation | follow_up | telemedicine | procedure | walk_in
+  reason         String?
+  notes          String?
+  noShowRisk     Float    @default(0) // 0..1 AI-scored risk
+  travelDistanceM Int?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  tenant         Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch         Branch?     @relation(fields: [branchId], references: [id])
+  patient        Patient     @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  practitioner   Practitioner @relation(fields: [practitionerId], references: [id])
+  resource       Resource?   @relation(fields: [resourceId], references: [id])
+  consultation   Consultation?
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Patient Records (EHR/DPI)
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Patient {
+  id             String   @id @default(cuid())
+  tenantId       String
+  branchId       String?
+  firstName      String
+  lastName       String
+  birthDate      DateTime?
+  sex            String?  // male | female | other | unknown
+  phone          String?
+  email          String?
+  addressLine    String?
+  postalCode     String?
+  city           String?
+  country        String   @default("FR")
+  ssn            String?  // Social Security Number (encrypted at app layer)
+  mutuelle       String?  // Insurance provider
+  insuranceNumber String?
+  bloodType      String?
+  heightCm       Int?
+  weightKg       Float?
+  notes          String?
+  tags           String?  // JSON array serialized
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  tenant         Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  appointments   Appointment[]
+  consultations  Consultation[]
+  prescriptions  Prescription[]
+  invoices       Invoice[]
+  allergies      Allergy[]
+  vitals         Vital[]
+  timelineEvents TimelineEvent[]
+  consentRecords ConsentRecord[]
+}
+
+model Allergy {
+  id        String   @id @default(cuid())
+  patientId String
+  substance String
+  severity  String   @default("moderate") // mild | moderate | severe
+  notedAt   DateTime @default(now())
+
+  patient   Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+}
+
+model Vital {
+  id          String   @id @default(cuid())
+  patientId   String
+  type        String   // blood_pressure | heart_rate | temperature | spo2 | weight | height
+  value       String
+  unit        String
+  recordedAt  DateTime @default(now())
+  recordedBy  String?
+
+  patient     Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+}
+
+model Consultation {
+  id             String   @id @default(cuid())
+  tenantId       String
+  patientId      String
+  practitionerId String
+  appointmentId  String?  @unique
+  startAt        DateTime @default(now())
+  durationMin    Int      @default(30)
+  chiefComplaint String?
+  history        String?  // HPI narrative
+  examination    String?
+  assessment     String?
+  plan           String?
+  diagnosisCodes String?  // ICD-10 serialized JSON array
+  procedureCodes String?  // CCAM/NGAP serialized JSON array
+  aiDrafted      Boolean  @default(false) // true if AI ambient scribe drafted it
+  aiConfidence   Float    @default(0)
+  signedBy       String?
+  signedAt       DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  tenant         Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  patient        Patient      @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  practitioner   Practitioner @relation(fields: [practitionerId], references: [id])
+  appointment    Appointment? @relation(fields: [appointmentId], references: [id])
+  prescriptions  Prescription[]
+}
+
+model Prescription {
+  id             String   @id @default(cuid())
+  tenantId       String
+  patientId      String
+  consultationId String?
+  practitionerId String
+  medication     String
+  dosage         String
+  frequency      String
+  duration       String?
+  quantity       Int?
+  instructions   String?
+  status         String   @default("active") // active | completed | cancelled
+  createdAt      DateTime @default(now())
+
+  tenant         Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  patient        Patient      @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  consultation   Consultation? @relation(fields: [consultationId], references: [id])
+  practitioner   Practitioner @relation(fields: [practitionerId], references: [id])
+}
+
+model TimelineEvent {
+  id          String   @id @default(cuid())
+  patientId   String
+  type        String   // consultation | prescription | invoice | appointment | lab | imaging | message | note
+  title       String
+  description String?
+  occurredAt  DateTime @default(now())
+  metadata    String?  // JSON serialized
+
+  patient     Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Billing & Insurance
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Invoice {
+  id             String   @id @default(cuid())
+  tenantId       String
+  patientId      String
+  number         String   @unique // human-readable invoice number
+  issueDate      DateTime @default(now())
+  dueDate        DateTime?
+  status         String   @default("draft") // draft | issued | paid | partial | overdue | cancelled
+  subtotal       Float    @default(0)
+  taxRate        Float    @default(0)
+  taxAmount      Float    @default(0)
+  total          Float    @default(0)
+  paidAmount     Float    @default(0)
+  tiersPayant    Boolean  @default(false) // third-party payer
+  insuranceCovered Float  @default(0)
+  patientShare   Float    @default(0)
+  paymentMethod  String?  // card | cash | check | transfer | amex
+  paidAt         DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  tenant         Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  patient        Patient    @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  items          InvoiceItem[]
+}
+
+model InvoiceItem {
+  id          String   @id @default(cuid())
+  invoiceId   String
+  description String
+  code        String?  // CCAM or NGAP code
+  codeType    String?  // ccam | ngap
+  quantity    Int      @default(1)
+  unitPrice   Float
+  total       Float
+
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Audit & Compliance — hash-chained, tamper-evident
+// ─────────────────────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  tenantId     String
+  userId       String?
+  action       String   // create | update | delete | view | export | login | break_glass
+  entity       String   // patient | appointment | consultation | prescription | invoice | user
+  entityId     String?
+  prevHash     String?
+  hash         String   // sha256(prevHash + payload + timestamp)
+  ipAddress    String?
+  userAgent    String?
+  payload      String   // JSON serialized
+  reason       String?  // for break-glass access
+  createdAt    DateTime @default(now())
+
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user         User?    @relation(fields: [userId], references: [id])
+}
+
+model ConsentRecord {
+  id         String   @id @default(cuid())
+  tenantId   String
+  patientId  String
+  type       String   // treatment | data_processing | ai_scribe | telemedicine | research
+  status     String   // granted | withdrawn | pending
+  grantedAt  DateTime?
+  withdrawnAt DateTime?
+  notes      String?
+
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  patient    Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Inventory
+// ─────────────────────────────────────────────────────────────────────────────
+
+model InventoryItem {
+  id          String   @id @default(cuid())
+  tenantId    String
+  name        String
+  category    String   // consumable | medication | equipment
+  unit        String   // box | vial | unit | pack
+  stock       Int      @default(0)
+  reorderAt   Int      @default(10)
+  expiryDate  DateTime?
+  unitPrice   Float    @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
