@@ -46,7 +46,7 @@ export function AdminInstancesView({ locale }: { locale: Locale }) {
       const res = await fetch(`/api/admin/instances/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, adminEmail: 'admin@smartclinic.app' }),
+        body: JSON.stringify({ action }),
       })
       if (!res.ok) throw new Error('Failed')
       toast.success(locale === 'fr' ? `Instance ${action === 'block' ? 'bloquée' : 'débloquée'}` : `Instance ${action}`)

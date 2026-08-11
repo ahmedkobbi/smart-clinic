@@ -164,7 +164,8 @@ function PublishDialog({ open, onOpenChange, locale, onSuccess }: any) {
           minVersion: form.minVersion || undefined,
           bundleUrl: form.bundleUrl || undefined,
           bundleSignature: form.bundleSignature || undefined,
-          adminEmail: 'admin@smartclinic.app',
+          // adminEmail derived from session on server
+
         }),
       })
       if (!res.ok) throw new Error('Failed')

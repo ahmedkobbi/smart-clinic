@@ -221,8 +221,11 @@ async function seed() {
     db.user.create({ data: { tenantId: tenant.id, email: 'reception@cabinet-lumiere.fr', name: 'Marie Lefort', role: 'receptionist', passwordHash } }),
     db.user.create({ data: { tenantId: tenant.id, email: 'billing@cabinet-lumiere.fr', name: 'Paul Girard', role: 'billing', passwordHash } }),
     db.user.create({ data: { tenantId: tenant.id, email: 'auditor@cabinet-lumiere.fr', name: 'Sylvie Aumont', role: 'auditor', passwordHash } }),
+    // Superadmin — owner-side operator, belongs to the same tenant but has role: 'superadmin'
+    db.user.create({ data: { tenantId: tenant.id, email: 'admin@smartclinic.app', name: 'Alex Moreau', role: 'superadmin', passwordHash } }),
   ])
   console.log(`  ✓ Users: ${users.length} staff accounts (password: smartclinic2026)`)
+  console.log(`  ✓ Superadmin: admin@smartclinic.app (role: superadmin)`)
 
   const practitioners = await Promise.all(
     PRACTITIONERS.map((p, i) =>

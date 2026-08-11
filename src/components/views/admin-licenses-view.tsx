@@ -214,7 +214,8 @@ function CreateLicenseDialog({ open, onOpenChange, locale, onSuccess }: any) {
         body: JSON.stringify({
           ...form,
           modules: ['scheduling', 'ehr', 'billing', 'prescriptions', 'labs', 'documents', 'telemedicine', 'audit', 'inventory', 'triage', 'sustainability', 'ai_scribe'],
-          adminEmail: 'admin@smartclinic.app',
+          // adminEmail derived from session on server
+
         }),
       })
       if (!res.ok) throw new Error('Failed')
@@ -333,13 +334,33 @@ function LicenseDetailDialog({ id, onClose, locale, onChanged }: any) {
     },
   })
 
+  const [togglingFlag, setTogglingFlag] = useState<string | null>(null)
+
+  const toggleFeatureFlag = async (flagId: string, enabled: boolean) => {
+    setTogglingFlag(flagId)
+    try {
+      const res = await fetch(`/api/admin/feature-flags/${flagId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled }),
+      })
+      if (!res.ok) throw new Error('Failed')
+      toast.success(locale === 'fr' ? `Module ${enabled ? 'activé' : 'désactivé'}` : `Module ${enabled ? 'enabled' : 'disabled'}`)
+      qc.invalidateQueries({ queryKey: ['admin-license', id] })
+    } catch (e) {
+      toast.error((e as Error).message)
+    } finally {
+      setTogglingFlag(null)
+    }
+  }
+
   const doAction = async (action: string, extra?: any) => {
     setActing(action)
     try {
       const res = await fetch(`/api/admin/licenses/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, adminEmail: 'admin@smartclinic.app', ...extra }),
+        body: JSON.stringify({ action, ...extra }),
       })
       if (!res.ok) throw new Error('Failed')
       toast.success(locale === 'fr' ? `Action: ${action}` : `Action: ${action}`)
@@ -422,15 +443,26 @@ function LicenseDetailDialog({ id, onClose, locale, onChanged }: any) {
               </div>
             )}
 
-            {/* Feature flags */}
+            {/* Feature flags — toggleable */}
             {license.featureFlags?.length > 0 && (
               <div>
-                <p className="text-[10px] uppercase font-semibold text-muted-foreground mb-2">{locale === 'fr' ? 'Modules' : 'Modules'}</p>
+                <p className="text-[10px] uppercase font-semibold text-muted-foreground mb-2">
+                  {locale === 'fr' ? 'Modules (cliquer pour activer/désactiver)' : 'Modules (click to toggle)'}
+                </p>
                 <div className="flex flex-wrap gap-1.5">
                   {license.featureFlags.map((f: any) => (
-                    <Badge key={f.id} variant={f.enabled ? 'default' : 'outline'} className="text-[10px]">
-                      {f.flagKey}
-                    </Badge>
+                    <button
+                      key={f.id}
+                      onClick={() => toggleFeatureFlag(f.id, !f.enabled)}
+                      disabled={togglingFlag === f.id}
+                      className={`px-2 py-1 rounded-full text-[10px] font-medium transition-colors ${
+                        f.enabled
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted text-muted-foreground hover:bg-accent'
+                      }`}
+                    >
+                      {togglingFlag === f.id ? '...' : f.flagKey}
+                    </button>
                   ))}
                 </div>
               </div>

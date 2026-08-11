@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { generateLicenseKey } from '@/lib/crypto'
+import { requireAdmin } from '@/lib/auth-helpers'
 import { z } from 'zod'
 
 export const dynamic = 'force-dynamic'
@@ -16,10 +17,13 @@ const LicenseCreateSchema = z.object({
   maxPractitioners: z.number().int().min(1).max(1000).default(10),
   durationDays: z.number().int().min(1).max(3650).default(365),
   notes: z.string().optional(),
-  adminEmail: z.string().email(),
 })
 
 export async function GET(req: NextRequest) {
+  // Auth check — superadmin only
+  const auth = await requireAdmin(req)
+  if (auth instanceof NextResponse) return auth
+
   try {
     const url = new URL(req.url)
     const status = url.searchParams.get('status')
@@ -60,6 +64,11 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  // Auth check — superadmin only
+  const auth = await requireAdmin(req)
+  if (auth instanceof NextResponse) return auth
+  const session = auth
+
   try {
     const body = await req.json()
     const parsed = LicenseCreateSchema.parse(body)
@@ -87,7 +96,7 @@ export async function POST(req: NextRequest) {
     // Log admin action
     await db.adminAction.create({
       data: {
-        adminEmail: parsed.adminEmail,
+        adminEmail: session.user.email,
         action: 'issue_license',
         target: 'license',
         targetId: license.id,

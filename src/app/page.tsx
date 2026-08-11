@@ -81,8 +81,8 @@ function AppShell() {
     return <LoginScreen />
   }
 
-  // Owner side — admin console
-  if (useApp.getState().userMode === 'admin') {
+  // Owner side — admin console (only for superadmin)
+  if (useApp.getState().userMode === 'admin' && (session?.user as any)?.role === 'superadmin') {
     return (
       <div className="flex min-h-screen">
         <AdminSidebar locale={locale} session={session} />

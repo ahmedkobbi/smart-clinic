@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { requireAdmin } from '@/lib/auth-helpers'
 import { z } from 'zod'
 
 export const dynamic = 'force-dynamic'
@@ -12,10 +13,13 @@ const UpdateSchema = z.object({
   releaseNotes: z.string().optional(),
   bundleUrl: z.string().optional(),
   bundleSignature: z.string().optional(),
-  adminEmail: z.string().email(),
 })
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  // Auth check — superadmin only
+  const auth = await requireAdmin(req)
+  if (auth instanceof NextResponse) return auth
+
   try {
     const channels = await db.updateChannel.findMany({
       orderBy: { publishedAt: 'desc' },
@@ -27,6 +31,11 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  // Auth check — superadmin only
+  const auth = await requireAdmin(req)
+  if (auth instanceof NextResponse) return auth
+  const session = auth
+
   try {
     const body = await req.json()
     const parsed = UpdateSchema.parse(body)
@@ -56,7 +65,7 @@ export async function POST(req: NextRequest) {
 
     await db.adminAction.create({
       data: {
-        adminEmail: parsed.adminEmail,
+        adminEmail: session.user.email,
         action: 'publish_update',
         target: 'update',
         targetId: channel.id,

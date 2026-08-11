@@ -1,13 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { requireAdmin } from '@/lib/auth-helpers'
 
 export const dynamic = 'force-dynamic'
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  // Auth check — superadmin only
+  const auth = await requireAdmin(req)
+  if (auth instanceof NextResponse) return auth
+  const session = auth
+
   try {
     const { id } = await params
     const body = await req.json()
-    const { action, adminEmail } = body
+    const { action } = body
+    const adminEmail = session.user.email
 
     if (action === 'block') {
       const instance = await db.instance.update({

@@ -111,7 +111,7 @@ export function Sidebar({ locale, session }: { locale: Locale; session: Session 
           </div>
         </div>
         {/* Admin console toggle — only for superadmin */}
-        {(session?.user as any)?.role === 'admin' && (
+        {(session?.user as any)?.role === 'superadmin' && (
           <button
             onClick={() => useApp.getState().setUserMode('admin')}
             className="w-full p-2.5 rounded-xl glass-raised text-xs font-medium flex items-center gap-2 hover:bg-glass-warm/10 transition-colors group"

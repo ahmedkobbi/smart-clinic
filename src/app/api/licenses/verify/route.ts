@@ -65,8 +65,17 @@ export async function POST(req: NextRequest) {
         where: { id: license.id },
         data: { status: 'expired' },
       })
+      // Emergency read-only mode — patient safety requires data be readable
+      // Desktop can still READ patient data but cannot create new records
       return NextResponse.json(
-        { error: 'License expired', code: 'LICENSE_EXPIRED', expiredAt: license.expiresAt },
+        {
+          error: 'License expired',
+          code: 'LICENSE_EXPIRED',
+          expiredAt: license.expiresAt,
+          emergencyMode: 'read_only',
+          emergencyReason: 'License expired — patient data readable for safety, new writes blocked',
+          gracePeriodEnds: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        },
         { status: 403 }
       )
     }
