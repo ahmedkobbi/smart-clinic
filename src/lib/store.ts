@@ -18,6 +18,10 @@ export type ViewKey =
   | 'settings'
   | 'sustainability'
   | 'triage'
+  | 'documents'
+  | 'labs'
+  | 'telemedicine'
+  | 'staff'
 
 export type Theme = 'light' | 'dark'
 export type Density = 'comfortable' | 'compact'

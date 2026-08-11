@@ -48,6 +48,10 @@ model Tenant {
   resources     Resource[]
   consentRecords ConsentRecord[]
   inventoryItems InventoryItem[]
+  documents      PatientDocument[]
+  labResults     LabResult[]
+  waitlist       WaitlistEntry[]
+  credentials    StaffCredential[]
 }
 
 model Branch {
@@ -100,6 +104,7 @@ model Practitioner {
   appointments  Appointment[]
   consultations Consultation[]
   prescriptions Prescription[]
+  credentials   StaffCredential[]
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -185,6 +190,9 @@ model Patient {
   vitals         Vital[]
   timelineEvents TimelineEvent[]
   consentRecords ConsentRecord[]
+  documents      PatientDocument[]
+  labResults     LabResult[]
+  waitlist       WaitlistEntry[]
 }
 
 model Allergy {
@@ -369,4 +377,90 @@ model InventoryItem {
   updatedAt   DateTime @updatedAt
 
   tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Documents & Imaging — encrypted document/image vault
+// ─────────────────────────────────────────────────────────────────────────────
+
+model PatientDocument {
+  id          String   @id @default(cuid())
+  tenantId    String
+  patientId   String
+  name        String
+  category    String   // lab_report | imaging | consent_form | prescription | referral | other
+  mimeType    String
+  sizeBytes   Int
+  // Base64-encoded content (SQLite-compatible; production would use MinIO/S3)
+  content     String
+  uploadedBy  String?
+  uploadedAt  DateTime @default(now())
+  description String?
+
+  patient     Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Lab Results — structured values with reference ranges
+// ─────────────────────────────────────────────────────────────────────────────
+
+model LabResult {
+  id            String   @id @default(cuid())
+  tenantId      String
+  patientId     String
+  testName      String   // e.g. "Glycémie", "Hémoglobine A1c", "Créatinine"
+  value         String
+  unit          String   // mg/dL, g/dL, mmol/L, etc.
+  refRangeLow   Float?
+  refRangeHigh  Float?
+  flag          String   @default("normal") // normal | low | high | critical
+  category      String   @default("general") // hematology | biochemistry | microbiology | endocrinology
+  collectedAt   DateTime @default(now())
+  resultedAt    DateTime @default(now())
+  performedBy   String?
+
+  patient       Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Waitlist — auto-backfill when appointments are cancelled
+// ─────────────────────────────────────────────────────────────────────────────
+
+model WaitlistEntry {
+  id           String   @id @default(cuid())
+  tenantId     String
+  patientId    String
+  practitionerId String?
+  reason       String
+  preferredDate DateTime?
+  preferredTimeOfDay String? // morning | afternoon | evening
+  priority     Int      @default(5) // 1 (urgent) to 10 (routine)
+  status       String   @default("waiting") // waiting | notified | scheduled | expired
+  notifiedAt   DateTime?
+  createdAt    DateTime @default(now())
+
+  patient      Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Staff Credentials — license/credential expiry tracking
+// ─────────────────────────────────────────────────────────────────────────────
+
+model StaffCredential {
+  id           String   @id @default(cuid())
+  tenantId     String
+  practitionerId String?
+  userId       String?
+  type         String   // rpps | adeli | medical_degree | cpr | specialty_board | insurance
+  number       String?
+  issuedAt     DateTime?
+  expiresAt    DateTime?
+  issuingBody  String?
+  status       String   @default("valid") // valid | expiring_soon | expired | revoked
+
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  practitioner Practitioner? @relation(fields: [practitionerId], references: [id])
 }

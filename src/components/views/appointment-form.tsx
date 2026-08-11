@@ -47,8 +47,9 @@ export function AppointmentForm({ open, onOpenChange, locale }: { open: boolean;
     reason: '',
   })
 
-  useEffect(() => {
-    if (open) {
+  // Reset form when dialog opens (via key prop on parent or explicit reset)
+  const handleOpenChange = (o: boolean) => {
+    if (!o) {
       setForm({
         patientId: '',
         practitionerId: '',
@@ -61,7 +62,8 @@ export function AppointmentForm({ open, onOpenChange, locale }: { open: boolean;
         reason: '',
       })
     }
-  }, [open])
+    onOpenChange(o)
+  }
 
   const handleSubmit = async () => {
     if (!form.patientId || !form.practitionerId) {
@@ -103,7 +105,7 @@ export function AppointmentForm({ open, onOpenChange, locale }: { open: boolean;
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="glass-floating max-w-xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">

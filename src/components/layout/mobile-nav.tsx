@@ -6,6 +6,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import {
   LayoutDashboard, Users, CalendarClock, FileText, Receipt,
   ShieldCheck, Package, Settings, HeartPulse,
+  FolderOpen, FlaskConical, Video, IdCard, Leaf, Stethoscope,
 } from 'lucide-react'
 
 const NAV_ITEMS: { key: ViewKey; icon: any }[] = [
@@ -14,8 +15,14 @@ const NAV_ITEMS: { key: ViewKey; icon: any }[] = [
   { key: 'appointments', icon: CalendarClock },
   { key: 'records', icon: FileText },
   { key: 'billing', icon: Receipt },
+  { key: 'labs', icon: FlaskConical },
+  { key: 'documents', icon: FolderOpen },
+  { key: 'telemedicine', icon: Video },
+  { key: 'staff', icon: IdCard },
   { key: 'audit', icon: ShieldCheck },
   { key: 'inventory', icon: Package },
+  { key: 'triage', icon: Stethoscope },
+  { key: 'sustainability', icon: Leaf },
   { key: 'settings', icon: Settings },
 ]
 

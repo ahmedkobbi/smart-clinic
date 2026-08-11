@@ -18,6 +18,10 @@ import { InventoryView } from '@/components/views/inventory-view'
 import { SettingsView } from '@/components/views/settings-view'
 import { SustainabilityView } from '@/components/views/sustainability-view'
 import { TriageView } from '@/components/views/triage-view'
+import { DocumentsView } from '@/components/views/documents-view'
+import { LabsView } from '@/components/views/labs-view'
+import { TelemedicineView } from '@/components/views/telemedicine-view'
+import { StaffView } from '@/components/views/staff-view'
 import { Menu } from 'lucide-react'
 import { useState } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -106,6 +110,10 @@ function AppShell() {
               {view === 'settings' && <SettingsView locale={locale} />}
               {view === 'sustainability' && <SustainabilityView locale={locale} />}
               {view === 'triage' && <TriageView locale={locale} />}
+              {view === 'documents' && <DocumentsView locale={locale} />}
+              {view === 'labs' && <LabsView locale={locale} />}
+              {view === 'telemedicine' && <TelemedicineView locale={locale} />}
+              {view === 'staff' && <StaffView locale={locale} />}
             </motion.div>
           </AnimatePresence>
         </main>

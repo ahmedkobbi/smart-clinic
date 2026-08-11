@@ -7,7 +7,7 @@ import { signOut, type Session } from 'next-auth/react'
 import {
   LayoutDashboard, Users, CalendarClock, FileText, Receipt,
   ShieldCheck, Package, Settings, HeartPulse, Leaf, Stethoscope,
-  LogOut,
+  LogOut, FolderOpen, FlaskConical, Video, IdCard,
 } from 'lucide-react'
 import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
@@ -19,6 +19,10 @@ const NAV_ITEMS: { key: ViewKey; icon: any; }[] = [
   { key: 'appointments', icon: CalendarClock },
   { key: 'records', icon: FileText },
   { key: 'billing', icon: Receipt },
+  { key: 'labs', icon: FlaskConical },
+  { key: 'documents', icon: FolderOpen },
+  { key: 'telemedicine', icon: Video },
+  { key: 'staff', icon: IdCard },
   { key: 'audit', icon: ShieldCheck },
   { key: 'inventory', icon: Package },
   { key: 'triage', icon: Stethoscope },

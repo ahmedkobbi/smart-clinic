@@ -9,9 +9,10 @@ import {
   LayoutDashboard, Users, CalendarClock, FileText, Receipt,
   ShieldCheck, Package, Settings, UserPlus, CalendarPlus,
   FilePlus, Receipt as ReceiptPlus, Moon, Sun, Globe, CornerDownRight, Search,
-  Hash, Calendar,
+  Hash, Calendar, Sparkles, Loader2, FolderOpen, FlaskConical, Video, IdCard, Leaf, Stethoscope,
 } from 'lucide-react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
+import { toast } from 'sonner'
 
 interface CommandItem {
   id: string
@@ -58,9 +59,9 @@ export function CommandPalette({ locale }: { locale: Locale }) {
   // Debounced search for actual data
   useEffect(() => {
     if (query.length < 2) {
-      setSearchResults({ patients: [], invoices: [], appointments: [] })
       return
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSearching(true)
     const timeout = setTimeout(async () => {
       try {
@@ -84,8 +85,14 @@ export function CommandPalette({ locale }: { locale: Locale }) {
     { id: 'nav-appointments', label: t.nav.appointments, group: t.command.groups.navigation, icon: CalendarClock, action: () => setView('appointments') },
     { id: 'nav-records', label: t.nav.records, group: t.command.groups.navigation, icon: FileText, action: () => setView('records') },
     { id: 'nav-billing', label: t.nav.billing, group: t.command.groups.navigation, icon: Receipt, action: () => setView('billing') },
+    { id: 'nav-labs', label: t.nav.labs, group: t.command.groups.navigation, icon: FlaskConical, action: () => setView('labs') },
+    { id: 'nav-documents', label: t.nav.documents, group: t.command.groups.navigation, icon: FolderOpen, action: () => setView('documents') },
+    { id: 'nav-telemedicine', label: t.nav.telemedicine, group: t.command.groups.navigation, icon: Video, action: () => setView('telemedicine') },
+    { id: 'nav-staff', label: t.nav.staff, group: t.command.groups.navigation, icon: IdCard, action: () => setView('staff') },
     { id: 'nav-audit', label: t.nav.audit, group: t.command.groups.navigation, icon: ShieldCheck, action: () => setView('audit') },
     { id: 'nav-inventory', label: t.nav.inventory, group: t.command.groups.navigation, icon: Package, action: () => setView('inventory') },
+    { id: 'nav-triage', label: t.nav.triage, group: t.command.groups.navigation, icon: Stethoscope, action: () => setView('triage') },
+    { id: 'nav-sustainability', label: t.nav.sustainability, group: t.command.groups.navigation, icon: Leaf, action: () => setView('sustainability') },
     { id: 'nav-settings', label: t.nav.settings, group: t.command.groups.navigation, icon: Settings, action: () => setView('settings') },
   ], [t, setView])
 
@@ -141,6 +148,40 @@ export function CommandPalette({ locale }: { locale: Locale }) {
   const hasDataResults = dataItems.length > 0
   const showNav = query.length < 2
 
+  // Check if query looks like a natural-language command
+  const isNLCommand = query.length > 3 && /\b(schedule|rdv|rendez-vous|planifier|book|trouve|find|aller|go to|ouvrir|open|navigate)\b/i.test(query)
+  const [nlExecuting, setNlExecuting] = useState(false)
+
+  const executeNLCommand = async () => {
+    setNlExecuting(true)
+    try {
+      const res = await fetch('/api/command', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ command: query, execute: true }),
+      })
+      if (!res.ok) throw new Error('Failed')
+      const data = await res.json()
+      if (data.executionResult?.success) {
+        if (data.executionResult.type === 'appointment_created') {
+          toast.success(data.executionResult.message)
+          setCommandOpen(false)
+          setQuery('')
+        } else if (data.executionResult.type === 'navigate') {
+          setView(data.executionResult.view as any)
+          setCommandOpen(false)
+          setQuery('')
+        }
+      } else {
+        toast.info(locale === 'fr' ? 'Commande analysée — voir détails' : 'Command parsed — see details')
+      }
+    } catch (e) {
+      toast.error((e as Error).message)
+    } finally {
+      setNlExecuting(false)
+    }
+  }
+
   const allItems = showNav ? [...navItems, ...actionItems, ...settingItems] : dataItems
 
   // Group items
@@ -177,7 +218,33 @@ export function CommandPalette({ locale }: { locale: Locale }) {
         </div>
 
         <div className="max-h-[60vh] overflow-y-auto scroll-area-glass p-2">
-          {query.length >= 2 && !hasDataResults && !searching && (
+          {/* NL command execution */}
+          {isNLCommand && (
+            <div className="mb-2">
+              <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                {locale === 'fr' ? 'Commande naturelle' : 'Natural language'}
+              </p>
+              <button
+                onClick={executeNLCommand}
+                disabled={nlExecuting}
+                className="w-full flex items-center gap-3 px-2 py-3 rounded-lg ai-glow bg-glass-accent/10 hover:bg-glass-accent/20 transition-colors group"
+              >
+                <span className="w-7 h-7 rounded-md bg-glass-accent/20 flex items-center justify-center shrink-0">
+                  {nlExecuting ? <Loader2 className="w-3.5 h-3.5 animate-spin text-glass-accent" /> : <Sparkles className="w-3.5 h-3.5 text-glass-accent" />}
+                </span>
+                <div className="flex-1 min-w-0 text-left">
+                  <p className="text-sm font-medium truncate">"{query}"</p>
+                  <p className="text-[10px] text-muted-foreground">
+                    {nlExecuting
+                      ? (locale === 'fr' ? 'Exécution…' : 'Executing…')
+                      : (locale === 'fr' ? 'Exécuter cette commande' : 'Execute this command')}
+                  </p>
+                </div>
+                <CornerDownRight className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+              </button>
+            </div>
+          )}
+          {query.length >= 2 && !hasDataResults && !searching && !isNLCommand && (
             <div className="p-8 text-center text-sm text-muted-foreground">
               <Search className="w-8 h-8 mx-auto mb-2 opacity-40" />
               {t.common.noResults}
