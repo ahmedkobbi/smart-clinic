@@ -2,10 +2,11 @@
 
 import { useApp } from '@/lib/store'
 import { getDict, formatDate, formatDateTime, type Locale } from '@/lib/i18n'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   FileText, Plus, Sparkles, ShieldCheck, AlertCircle, Pill, Search,
+  Loader2, Wand2, Check, X, Lock,
 } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
@@ -20,8 +21,9 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { EmptyState } from '@/components/common/empty-state'
+import { SkeletonCard } from '@/components/common/skeleton'
 import { toast } from 'sonner'
-import { Loader2 } from 'lucide-react'
 
 async function fetchConsultations() {
   const res = await fetch('/api/consultations?limit=100', { cache: 'no-store' })
@@ -101,94 +103,71 @@ export function RecordsView({ locale }: { locale: Locale }) {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={locale === 'fr' ? 'Rechercher une consultation…' : 'Search consultation…'}
-            className="pl-10 glass-base border-0"
+            className="pl-10 glass-base border-0 h-11"
           />
         </div>
-        <Button onClick={() => setDialogOpen(true)} className="bg-primary text-primary-foreground">
+        <Button onClick={() => setDialogOpen(true)} className="bg-primary text-primary-foreground h-11">
           <Plus className="w-4 h-4" /> {t.records.new}
         </Button>
       </div>
 
-      {/* AI banner */}
-      <div className="glass-base rounded-xl p-3 flex items-start gap-3">
-        <Sparkles className="w-4 h-4 text-glass-accent mt-0.5 shrink-0" />
-        <div className="text-xs">
-          <p className="font-medium">{t.ai.scribe}</p>
-          <p className="text-muted-foreground mt-0.5">{t.ai.nonDiagnostic}</p>
+      {/* AI banner — non-diagnostic, human-in-the-loop */}
+      <motion.div
+        initial={{ y: 8, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        className="glass-card ai-glow rounded-2xl p-4 flex items-start gap-3"
+      >
+        <div className="w-10 h-10 rounded-xl bg-glass-accent/15 flex items-center justify-center shrink-0">
+          <Sparkles className="w-5 h-5 text-glass-accent" />
         </div>
-      </div>
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-1">
+            <p className="text-sm font-semibold">{t.ai.scribe}</p>
+            <Badge variant="outline" className="text-[10px] animate-pulse-glow">{t.ai.badge}</Badge>
+          </div>
+          <p className="text-xs text-muted-foreground leading-relaxed">{t.ai.nonDiagnostic}</p>
+        </div>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => setDialogOpen(true)}
+          className="shrink-0"
+        >
+          <Wand2 className="w-3.5 h-3.5" /> {locale === 'fr' ? 'Générer un brouillon' : 'Generate draft'}
+        </Button>
+      </motion.div>
 
       {/* Consultation cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {isLoading ? (
-          <div className="col-span-2 p-8 text-center text-sm text-muted-foreground">{t.common.loading}</div>
+          <>
+            <SkeletonCard />
+            <SkeletonCard />
+            <SkeletonCard />
+            <SkeletonCard />
+          </>
         ) : filtered.length === 0 ? (
-          <div className="col-span-2 p-8 text-center text-sm text-muted-foreground">
-            <FileText className="w-8 h-8 mx-auto mb-2 opacity-40" />
-            {t.common.noResults}
+          <div className="col-span-2">
+            <EmptyState
+              icon={FileText}
+              title={locale === 'fr' ? 'Aucune consultation' : 'No consultations'}
+              description={locale === 'fr' ? 'Créez une nouvelle consultation ou utilisez le scribe IA pour générer un brouillon.' : 'Create a new consultation or use the AI scribe to generate a draft.'}
+              action={{ label: t.records.new, onClick: () => setDialogOpen(true) }}
+            />
           </div>
         ) : (
-          filtered.map((c: any, i: number) => (
-            <motion.button
-              key={c.id}
-              initial={{ y: 8, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: i * 20 }}
-              onClick={() => { setSelectedPatientId(c.patientId); setView('patients') }}
-              className="glass-card rounded-2xl p-4 text-left"
-            >
-              <div className="flex items-start justify-between gap-2 mb-2">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium truncate">
-                    {c.patient?.firstName} {c.patient?.lastName}
-                  </p>
-                  <p className="text-[11px] text-muted-foreground">{c.practitioner?.name}</p>
-                </div>
-                <span className="text-[10px] text-muted-foreground font-mono shrink-0">
-                  {formatDateTime(c.startAt, locale)}
-                </span>
-              </div>
-
-              {c.chiefComplaint && (
-                <p className="text-xs mb-2 font-medium">{c.chiefComplaint}</p>
-              )}
-              {c.assessment && (
-                <p className="text-[11px] text-muted-foreground line-clamp-2 mb-2">{c.assessment}</p>
-              )}
-
-              <div className="flex items-center gap-1.5 flex-wrap">
-                {c.diagnosisCodes && (
-                  JSON.parse(c.diagnosisCodes).map((dx: any) => (
-                    <Badge key={dx.code} variant="secondary" className="text-[10px] font-mono">
-                      {dx.code}
-                    </Badge>
-                  ))
-                )}
-                {c.procedureCodes && (
-                  JSON.parse(c.procedureCodes).map((pc: any) => (
-                    <Badge key={pc.code} variant="outline" className="text-[10px] font-mono">
-                      {pc.code}
-                    </Badge>
-                  ))
-                )}
-              </div>
-
-              <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/30">
-                {c.signedAt ? (
-                  <span className="status-pill text-success text-[10px]">
-                    <ShieldCheck className="w-3 h-3" /> {t.records.signed}
-                  </span>
-                ) : (
-                  <span className="status-pill text-warning text-[10px]">{t.records.unsigned}</span>
-                )}
-                {c.aiDrafted && (
-                  <span className="status-pill text-glass-accent text-[10px]">
-                    <Sparkles className="w-3 h-3" /> {t.ai.badge} {Math.round(c.aiConfidence * 100)}%
-                  </span>
-                )}
-              </div>
-            </motion.button>
-          ))
+          <AnimatePresence>
+            {filtered.map((c: any, i: number) => (
+              <ConsultationCard
+                key={c.id}
+                consultation={c}
+                locale={locale}
+                index={i}
+                onPatientClick={() => { setSelectedPatientId(c.patientId); setView('patients') }}
+                onSigned={() => qc.invalidateQueries({ queryKey: ['consultations'] })}
+              />
+            ))}
+          </AnimatePresence>
         )}
       </div>
 
@@ -204,9 +183,106 @@ export function RecordsView({ locale }: { locale: Locale }) {
   )
 }
 
+function ConsultationCard({ consultation: c, locale, index, onPatientClick, onSigned }: any) {
+  const t = getDict(locale)
+  const [signing, setSigning] = useState(false)
+
+  const handleSign = async () => {
+    setSigning(true)
+    try {
+      const res = await fetch(`/api/consultations/${c.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'sign', signedBy: c.practitioner?.name || 'Dr. Current' }),
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.error || 'Failed')
+      }
+      toast.success(locale === 'fr' ? 'Consultation signée' : 'Consultation signed')
+      onSigned()
+    } catch (e) {
+      toast.error((e as Error).message)
+    } finally {
+      setSigning(false)
+    }
+  }
+
+  return (
+    <motion.div
+      initial={{ y: 8, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ delay: index * 20 }}
+      className="glass-card rounded-2xl p-4"
+    >
+      <div className="flex items-start justify-between gap-2 mb-2">
+        <button onClick={onPatientClick} className="min-w-0 text-left">
+          <p className="text-sm font-medium truncate hover:text-primary transition-colors">
+            {c.patient?.firstName} {c.patient?.lastName}
+          </p>
+          <p className="text-[11px] text-muted-foreground">{c.practitioner?.name}</p>
+        </button>
+        <span className="text-[10px] text-muted-foreground font-mono shrink-0">
+          {formatDateTime(c.startAt, locale)}
+        </span>
+      </div>
+
+      {c.chiefComplaint && (
+        <p className="text-xs mb-2 font-medium">{c.chiefComplaint}</p>
+      )}
+      {c.assessment && (
+        <p className="text-[11px] text-muted-foreground line-clamp-3 mb-2 leading-relaxed">{c.assessment}</p>
+      )}
+
+      <div className="flex items-center gap-1.5 flex-wrap mb-3">
+        {c.diagnosisCodes && JSON.parse(c.diagnosisCodes).map((dx: any) => (
+          <Badge key={dx.code} variant="secondary" className="text-[10px] font-mono">
+            {dx.code}
+          </Badge>
+        ))}
+        {c.procedureCodes && JSON.parse(c.procedureCodes).map((pc: any) => (
+          <Badge key={pc.code} variant="outline" className="text-[10px] font-mono">
+            {pc.code}
+          </Badge>
+        ))}
+      </div>
+
+      <div className="flex items-center justify-between pt-3 border-t border-border/30">
+        <div className="flex items-center gap-2">
+          {c.signedAt ? (
+            <span className="status-pill text-success text-[10px]">
+              <ShieldCheck className="w-3 h-3" /> {t.records.signed}
+            </span>
+          ) : (
+            <span className="status-pill text-warning text-[10px]">{t.records.unsigned}</span>
+          )}
+          {c.aiDrafted && (
+            <span className="status-pill text-glass-accent text-[10px]">
+              <Sparkles className="w-3 h-3" /> {Math.round(c.aiConfidence * 100)}%
+            </span>
+          )}
+        </div>
+        {!c.signedAt && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleSign}
+            disabled={signing}
+            className="h-7 text-[11px]"
+          >
+            {signing ? <Loader2 className="w-3 h-3 animate-spin" /> : <ShieldCheck className="w-3 h-3" />}
+            {t.records.signConsultation}
+          </Button>
+        )}
+      </div>
+    </motion.div>
+  )
+}
+
 function ConsultationForm({ open, onOpenChange, locale, patients, practitioners, onSuccess }: any) {
   const t = getDict(locale)
   const [submitting, setSubmitting] = useState(false)
+  const [generating, setGenerating] = useState(false)
   const [form, setForm] = useState({
     patientId: '',
     practitionerId: '',
@@ -218,7 +294,53 @@ function ConsultationForm({ open, onOpenChange, locale, patients, practitioners,
     selectedDx: [] as string[],
     selectedCcam: [] as string[],
     aiDrafted: false,
+    aiConfidence: 0,
   })
+
+  const handleGenerate = async () => {
+    if (!form.chiefComplaint.trim()) {
+      toast.error(locale === 'fr' ? 'Saisir un motif de consultation d\'abord' : 'Enter chief complaint first')
+      return
+    }
+    setGenerating(true)
+    try {
+      const patient = patients.find((p: any) => p.id === form.patientId)
+      const res = await fetch('/api/ai/scribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chiefComplaint: form.chiefComplaint,
+          patientContext: {
+            age: patient?.birthDate ? new Date().getFullYear() - new Date(patient.birthDate).getFullYear() : undefined,
+            sex: patient?.sex,
+            allergies: [],
+          },
+          locale,
+        }),
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.error || 'AI generation failed')
+      }
+      const draft = await res.json()
+      setForm({
+        ...form,
+        history: draft.history || form.history,
+        examination: draft.examination || form.examination,
+        assessment: draft.assessment || form.assessment,
+        plan: draft.plan || form.plan,
+        selectedDx: draft.differentialDiagnoses || [],
+        aiDrafted: true,
+        aiConfidence: draft.confidence || 0.7,
+      })
+      toast.success(locale === 'fr' ? `Brouillon IA généré (confiance: ${Math.round((draft.confidence || 0.7) * 100)}%)` : `AI draft generated (${Math.round((draft.confidence || 0.7) * 100)}% confidence)`)
+      toast.warning(locale === 'fr' ? 'Brouillon — validation médicale obligatoire' : 'Draft — medical validation required', { duration: 5000 })
+    } catch (e) {
+      toast.error((e as Error).message)
+    } finally {
+      setGenerating(false)
+    }
+  }
 
   const handleSubmit = async () => {
     if (!form.patientId || !form.practitionerId) {
@@ -236,7 +358,7 @@ function ConsultationForm({ open, onOpenChange, locale, patients, practitioners,
           ...form,
           diagnosisCodes: dx,
           procedureCodes: ccam,
-          aiConfidence: form.aiDrafted ? 0.82 : 0,
+          aiConfidence: form.aiDrafted ? form.aiConfidence : 0,
         }),
       })
       if (!res.ok) throw new Error('Failed')
@@ -246,7 +368,7 @@ function ConsultationForm({ open, onOpenChange, locale, patients, practitioners,
       setForm({
         patientId: '', practitionerId: '', chiefComplaint: '', history: '',
         examination: '', assessment: '', plan: '', selectedDx: [], selectedCcam: [],
-        aiDrafted: false,
+        aiDrafted: false, aiConfidence: 0,
       })
     } catch (e) {
       toast.error((e as Error).message)
@@ -291,9 +413,31 @@ function ConsultationForm({ open, onOpenChange, locale, patients, practitioners,
           </div>
 
           <div className="space-y-1.5 col-span-2">
-            <Label>{t.records.chief}</Label>
-            <Input value={form.chiefComplaint} onChange={(e) => setForm({ ...form, chiefComplaint: e.target.value })} />
+            <div className="flex items-center justify-between">
+              <Label>{t.records.chief}</Label>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleGenerate}
+                disabled={generating || !form.chiefComplaint.trim()}
+                className="h-7 text-[11px] ai-glow border-glass-accent/30 text-glass-accent hover:bg-glass-accent/10"
+              >
+                {generating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
+                {t.ai.scribe}
+              </Button>
+            </div>
+            <Input value={form.chiefComplaint} onChange={(e) => setForm({ ...form, chiefComplaint: e.target.value })} placeholder={locale === 'fr' ? 'ex: Douleur thoracique, fièvre 3 jours...' : 'e.g. Chest pain, fever 3 days...'} />
           </div>
+
+          {form.aiDrafted && (
+            <div className="col-span-2 p-2 rounded-lg bg-glass-accent/10 border border-glass-accent/30 flex items-center gap-2 text-[11px] text-glass-accent">
+              <Sparkles className="w-3.5 h-3.5 animate-pulse-glow" />
+              <span>{locale === 'fr' ? 'Brouillon généré par IA — confiance' : 'AI-generated draft — confidence'}: {Math.round(form.aiConfidence * 100)}%</span>
+              <span className="text-muted-foreground">·</span>
+              <span>{locale === 'fr' ? 'Modifiez et validez avant signature' : 'Edit and validate before signing'}</span>
+            </div>
+          )}
+
           <div className="space-y-1.5 col-span-2">
             <Label>{t.records.history}</Label>
             <Textarea rows={2} value={form.history} onChange={(e) => setForm({ ...form, history: e.target.value })} />
@@ -313,7 +457,7 @@ function ConsultationForm({ open, onOpenChange, locale, patients, practitioners,
 
           <div className="space-y-1.5 col-span-2">
             <Label>{t.records.diagnosisCodes}</Label>
-            <div className="flex flex-wrap gap-1.5 p-2 rounded-lg glass-base max-h-32 overflow-y-auto">
+            <div className="flex flex-wrap gap-1.5 p-2 rounded-lg glass-base max-h-32 overflow-y-auto scroll-area-glass">
               {ICD10_CODES.map(dx => {
                 const sel = form.selectedDx.includes(dx.code)
                 return (
@@ -335,7 +479,7 @@ function ConsultationForm({ open, onOpenChange, locale, patients, practitioners,
 
           <div className="space-y-1.5 col-span-2">
             <Label>{t.records.procedureCodes}</Label>
-            <div className="flex flex-wrap gap-1.5 p-2 rounded-lg glass-base max-h-32 overflow-y-auto">
+            <div className="flex flex-wrap gap-1.5 p-2 rounded-lg glass-base max-h-32 overflow-y-auto scroll-area-glass">
               {CCAM_CODES.map(pc => {
                 const sel = form.selectedCcam.includes(pc.code)
                 return (
@@ -353,20 +497,6 @@ function ConsultationForm({ open, onOpenChange, locale, patients, practitioners,
                 )
               })}
             </div>
-          </div>
-
-          <div className="col-span-2 flex items-center gap-2 p-2 rounded-lg glass-base">
-            <input
-              type="checkbox"
-              id="aiDrafted"
-              checked={form.aiDrafted}
-              onChange={(e) => setForm({ ...form, aiDrafted: e.target.checked })}
-              className="w-4 h-4"
-            />
-            <Label htmlFor="aiDrafted" className="text-xs flex items-center gap-1.5 cursor-pointer">
-              <Sparkles className="w-3 h-3 text-glass-accent" />
-              {t.records.aiDrafted}
-            </Label>
           </div>
         </div>
 

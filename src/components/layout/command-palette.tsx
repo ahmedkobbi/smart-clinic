@@ -9,6 +9,7 @@ import {
   LayoutDashboard, Users, CalendarClock, FileText, Receipt,
   ShieldCheck, Package, Settings, UserPlus, CalendarPlus,
   FilePlus, Receipt as ReceiptPlus, Moon, Sun, Globe, CornerDownRight, Search,
+  Hash, Calendar,
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 
@@ -18,7 +19,13 @@ interface CommandItem {
   group: string
   icon: any
   action: () => void
-  keywords?: string[]
+  hint?: string
+}
+
+interface SearchResult {
+  patients: any[]
+  invoices: any[]
+  appointments: any[]
 }
 
 export function CommandPalette({ locale }: { locale: Locale }) {
@@ -26,9 +33,12 @@ export function CommandPalette({ locale }: { locale: Locale }) {
     commandOpen, setCommandOpen,
     setView, setLocale, toggleTheme, theme,
     setNewPatientOpen, setNewAppointmentOpen,
+    setSelectedPatientId,
   } = useApp()
   const t = getDict(locale)
   const [query, setQuery] = useState('')
+  const [searchResults, setSearchResults] = useState<SearchResult>({ patients: [], invoices: [], appointments: [] })
+  const [searching, setSearching] = useState(false)
 
   // Global ⌘K / Ctrl+K shortcut
   useEffect(() => {
@@ -45,52 +55,103 @@ export function CommandPalette({ locale }: { locale: Locale }) {
     return () => window.removeEventListener('keydown', handler)
   }, [commandOpen, setCommandOpen])
 
-  // Reset query when dialog closes (via onOpenChange callback below)
+  // Debounced search for actual data
+  useEffect(() => {
+    if (query.length < 2) {
+      setSearchResults({ patients: [], invoices: [], appointments: [] })
+      return
+    }
+    setSearching(true)
+    const timeout = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`, { cache: 'no-store' })
+        if (res.ok) {
+          const data = await res.json()
+          setSearchResults(data)
+        }
+      } catch {
+        // ignore
+      } finally {
+        setSearching(false)
+      }
+    }, 200)
+    return () => clearTimeout(timeout)
+  }, [query])
 
-  const items: CommandItem[] = useMemo(() => {
-    const navItems = [
-      { id: 'nav-dashboard', label: t.nav.dashboard, group: t.command.groups.navigation, icon: LayoutDashboard, action: () => setView('dashboard') },
-      { id: 'nav-patients', label: t.nav.patients, group: t.command.groups.navigation, icon: Users, action: () => setView('patients') },
-      { id: 'nav-appointments', label: t.nav.appointments, group: t.command.groups.navigation, icon: CalendarClock, action: () => setView('appointments') },
-      { id: 'nav-records', label: t.nav.records, group: t.command.groups.navigation, icon: FileText, action: () => setView('records') },
-      { id: 'nav-billing', label: t.nav.billing, group: t.command.groups.navigation, icon: Receipt, action: () => setView('billing') },
-      { id: 'nav-audit', label: t.nav.audit, group: t.command.groups.navigation, icon: ShieldCheck, action: () => setView('audit') },
-      { id: 'nav-inventory', label: t.nav.inventory, group: t.command.groups.navigation, icon: Package, action: () => setView('inventory') },
-      { id: 'nav-settings', label: t.nav.settings, group: t.command.groups.navigation, icon: Settings, action: () => setView('settings') },
-    ]
-    const actionItems = [
-      { id: 'act-new-patient', label: t.command.actions.newPatient, group: t.command.groups.actions, icon: UserPlus, action: () => { setNewPatientOpen(true); setCommandOpen(false) } },
-      { id: 'act-new-appt', label: t.command.actions.newAppointment, group: t.command.groups.actions, icon: CalendarPlus, action: () => { setNewAppointmentOpen(true); setCommandOpen(false) } },
-      { id: 'act-new-consult', label: t.command.actions.newConsultation, group: t.command.groups.actions, icon: FilePlus, action: () => { setView('records'); setCommandOpen(false) } },
-      { id: 'act-new-invoice', label: t.command.actions.newInvoice, group: t.command.groups.actions, icon: ReceiptPlus, action: () => { setView('billing'); setCommandOpen(false) } },
-    ]
-    const settingItems = [
-      { id: 'set-theme', label: t.command.actions.toggleTheme, group: t.command.groups.settings, icon: theme === 'dark' ? Sun : Moon, action: () => { toggleTheme(); setCommandOpen(false) } },
-      { id: 'set-lang', label: t.command.actions.toggleLanguage, group: t.command.groups.settings, icon: Globe, action: () => { setLocale(locale === 'fr' ? 'en' : 'fr'); setCommandOpen(false) } },
-      { id: 'set-open', label: t.command.actions.openSettings, group: t.command.groups.settings, icon: Settings, action: () => { setView('settings'); setCommandOpen(false) } },
-    ]
-    return [...navItems, ...actionItems, ...settingItems]
-  }, [locale, t, theme, setView, setLocale, toggleTheme, setNewPatientOpen, setNewAppointmentOpen, setCommandOpen])
+  const navItems: CommandItem[] = useMemo(() => [
+    { id: 'nav-dashboard', label: t.nav.dashboard, group: t.command.groups.navigation, icon: LayoutDashboard, action: () => setView('dashboard') },
+    { id: 'nav-patients', label: t.nav.patients, group: t.command.groups.navigation, icon: Users, action: () => setView('patients') },
+    { id: 'nav-appointments', label: t.nav.appointments, group: t.command.groups.navigation, icon: CalendarClock, action: () => setView('appointments') },
+    { id: 'nav-records', label: t.nav.records, group: t.command.groups.navigation, icon: FileText, action: () => setView('records') },
+    { id: 'nav-billing', label: t.nav.billing, group: t.command.groups.navigation, icon: Receipt, action: () => setView('billing') },
+    { id: 'nav-audit', label: t.nav.audit, group: t.command.groups.navigation, icon: ShieldCheck, action: () => setView('audit') },
+    { id: 'nav-inventory', label: t.nav.inventory, group: t.command.groups.navigation, icon: Package, action: () => setView('inventory') },
+    { id: 'nav-settings', label: t.nav.settings, group: t.command.groups.navigation, icon: Settings, action: () => setView('settings') },
+  ], [t, setView])
 
-  const filtered = useMemo(() => {
-    if (!query.trim()) return items
-    const q = query.toLowerCase()
-    return items.filter(item =>
-      item.label.toLowerCase().includes(q) ||
-      item.group.toLowerCase().includes(q) ||
-      (item.keywords || []).some(k => k.toLowerCase().includes(q))
-    )
-  }, [items, query])
+  const actionItems: CommandItem[] = useMemo(() => [
+    { id: 'act-new-patient', label: t.command.actions.newPatient, group: t.command.groups.actions, icon: UserPlus, action: () => { setNewPatientOpen(true); setCommandOpen(false) } },
+    { id: 'act-new-appt', label: t.command.actions.newAppointment, group: t.command.groups.actions, icon: CalendarPlus, action: () => { setNewAppointmentOpen(true); setCommandOpen(false) } },
+    { id: 'act-new-consult', label: t.command.actions.newConsultation, group: t.command.groups.actions, icon: FilePlus, action: () => { setView('records'); setCommandOpen(false) } },
+    { id: 'act-new-invoice', label: t.command.actions.newInvoice, group: t.command.groups.actions, icon: ReceiptPlus, action: () => { setView('billing'); setCommandOpen(false) } },
+  ], [t, setView, setNewPatientOpen, setNewAppointmentOpen, setCommandOpen])
+
+  const settingItems: CommandItem[] = useMemo(() => [
+    { id: 'set-theme', label: t.command.actions.toggleTheme, group: t.command.groups.settings, icon: theme === 'dark' ? Sun : Moon, action: () => { toggleTheme(); setCommandOpen(false) } },
+    { id: 'set-lang', label: t.command.actions.toggleLanguage, group: t.command.groups.settings, icon: Globe, action: () => { setLocale(locale === 'fr' ? 'en' : 'fr'); setCommandOpen(false) } },
+    { id: 'set-open', label: t.command.actions.openSettings, group: t.command.groups.settings, icon: Settings, action: () => { setView('settings'); setCommandOpen(false) } },
+  ], [t, theme, locale, setView, setLocale, toggleTheme, setCommandOpen])
+
+  // Build data search results as command items
+  const dataItems: CommandItem[] = useMemo(() => {
+    const items: CommandItem[] = []
+    for (const p of searchResults.patients) {
+      items.push({
+        id: `data-patient-${p.id}`,
+        label: `${p.firstName} ${p.lastName}`,
+        group: t.command.groups.patients,
+        icon: Users,
+        action: () => { setSelectedPatientId(p.id); setView('patients'); setCommandOpen(false) },
+        hint: p.email,
+      })
+    }
+    for (const inv of searchResults.invoices) {
+      items.push({
+        id: `data-invoice-${inv.id}`,
+        label: `${inv.number} — ${inv.patient.firstName} ${inv.patient.lastName}`,
+        group: locale === 'fr' ? 'Factures' : 'Invoices',
+        icon: Hash,
+        action: () => { setSelectedPatientId(inv.patientId); setView('billing'); setCommandOpen(false) },
+        hint: `${inv.total.toFixed(2)} €`,
+      })
+    }
+    for (const appt of searchResults.appointments) {
+      items.push({
+        id: `data-appt-${appt.id}`,
+        label: `${appt.patient.firstName} ${appt.patient.lastName} — ${appt.reason || 'Consultation'}`,
+        group: locale === 'fr' ? 'Rendez-vous' : 'Appointments',
+        icon: Calendar,
+        action: () => { setSelectedPatientId(appt.patientId); setView('appointments'); setCommandOpen(false) },
+        hint: appt.practitioner.name,
+      })
+    }
+    return items
+  }, [searchResults, t, locale, setSelectedPatientId, setView, setCommandOpen])
+
+  const hasDataResults = dataItems.length > 0
+  const showNav = query.length < 2
+
+  const allItems = showNav ? [...navItems, ...actionItems, ...settingItems] : dataItems
 
   // Group items
   const grouped = useMemo(() => {
     const map = new Map<string, CommandItem[]>()
-    for (const item of filtered) {
+    for (const item of allItems) {
       if (!map.has(item.group)) map.set(item.group, [])
       map.get(item.group)!.push(item)
     }
     return Array.from(map.entries())
-  }, [filtered])
+  }, [allItems])
 
   const handleRun = (item: CommandItem) => {
     item.action()
@@ -104,7 +165,7 @@ export function CommandPalette({ locale }: { locale: Locale }) {
           <DialogTitle>{t.nav.command}</DialogTitle>
         </DialogHeader>
         <div className="flex items-center gap-3 px-4 py-3 border-b border-border/40">
-          <Search className="w-4 h-4 text-muted-foreground" />
+          <Search className={`w-4 h-4 text-muted-foreground ${searching ? 'animate-pulse' : ''}`} />
           <Input
             autoFocus
             value={query}
@@ -116,36 +177,52 @@ export function CommandPalette({ locale }: { locale: Locale }) {
         </div>
 
         <div className="max-h-[60vh] overflow-y-auto scroll-area-glass p-2">
-          {grouped.length === 0 ? (
+          {query.length >= 2 && !hasDataResults && !searching && (
             <div className="p-8 text-center text-sm text-muted-foreground">
               <Search className="w-8 h-8 mx-auto mb-2 opacity-40" />
               {t.common.noResults}
             </div>
-          ) : (
-            grouped.map(([group, groupItems]) => (
-              <div key={group} className="mb-2">
-                <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  {group}
-                </p>
-                {groupItems.map((item) => {
-                  const Icon = item.icon
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => handleRun(item)}
-                      className="w-full flex items-center gap-3 px-2 py-2 rounded-lg text-sm hover:bg-accent/50 transition-colors group"
-                    >
-                      <span className="w-7 h-7 rounded-md glass-base flex items-center justify-center shrink-0">
-                        <Icon className="w-3.5 h-3.5 text-foreground/70 group-hover:text-primary transition-colors" />
-                      </span>
-                      <span className="flex-1 text-left">{item.label}</span>
-                      <CornerDownRight className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </button>
-                  )
-                })}
-              </div>
-            ))
           )}
+          {query.length >= 2 && searching && (
+            <div className="p-8 text-center text-sm text-muted-foreground">
+              <Search className="w-8 h-8 mx-auto mb-2 animate-pulse opacity-40" />
+              {t.common.loading}
+            </div>
+          )}
+          {grouped.length === 0 && showNav && (
+            <div className="p-8 text-center text-sm text-muted-foreground">
+              <Search className="w-8 h-8 mx-auto mb-2 opacity-40" />
+              {t.common.noResults}
+            </div>
+          )}
+          {grouped.map(([group, groupItems]) => (
+            <div key={group} className="mb-2">
+              <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                {group}
+              </p>
+              {groupItems.map((item) => {
+                const Icon = item.icon
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => handleRun(item)}
+                    className="w-full flex items-center gap-3 px-2 py-2 rounded-lg text-sm hover:bg-accent/50 transition-colors group"
+                  >
+                    <span className="w-7 h-7 rounded-md glass-base flex items-center justify-center shrink-0">
+                      <Icon className="w-3.5 h-3.5 text-foreground/70 group-hover:text-primary transition-colors" />
+                    </span>
+                    <div className="flex-1 min-w-0 text-left">
+                      <p className="truncate">{item.label}</p>
+                      {item.hint && (
+                        <p className="text-[10px] text-muted-foreground truncate">{item.hint}</p>
+                      )}
+                    </div>
+                    <CornerDownRight className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                  </button>
+                )
+              })}
+            </div>
+          ))}
         </div>
 
         <div className="px-4 py-2 border-t border-border/40 text-[10px] text-muted-foreground flex items-center justify-between">

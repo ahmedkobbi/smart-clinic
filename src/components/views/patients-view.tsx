@@ -3,11 +3,11 @@
 import { useApp } from '@/lib/store'
 import { getDict, formatDate, formatDateTime, calculateAge, calculateBmi, type Locale } from '@/lib/i18n'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Search, Plus, Phone, Mail, MapPin, Droplet, Activity, Calendar,
-  Pill, Receipt, FileText, AlertTriangle, ShieldCheck, ChevronRight, X,
-  Heart, Weight, Ruler, Thermometer, Clock,
+  Pill, Receipt, FileText, AlertTriangle, ShieldCheck, ChevronRight,
+  Heart, Weight, Ruler, Thermometer, Lock, X, Sparkles,
 } from 'lucide-react'
 import { useState, useMemo } from 'react'
 import { Input } from '@/components/ui/input'
@@ -17,8 +17,20 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from '@/components/ui/sheet'
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select'
 import { StatusPill, invoiceStatusVariant } from '@/components/common/status-pill'
+import { EmptyState } from '@/components/common/empty-state'
+import { SkeletonList } from '@/components/common/skeleton'
+import { VitalsChart } from '@/components/common/vitals-chart'
 import { PatientForm } from './patient-form'
+import { toast } from 'sonner'
 
 interface PatientList {
   items: any[]
@@ -64,10 +76,10 @@ export function PatientsView({ locale }: { locale: Locale }) {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t.patients.search}
-            className="pl-10 glass-base border-0"
+            className="pl-10 glass-base border-0 h-11"
           />
         </div>
-        <Button onClick={() => setNewPatientOpen(true)} className="bg-primary text-primary-foreground hover:opacity-90">
+        <Button onClick={() => setNewPatientOpen(true)} className="bg-primary text-primary-foreground hover:opacity-90 h-11">
           <Plus className="w-4 h-4" /> {t.patients.new}
         </Button>
       </div>
@@ -83,19 +95,21 @@ export function PatientsView({ locale }: { locale: Locale }) {
         </div>
         <div className="max-h-[60vh] overflow-y-auto scroll-area-glass">
           {isLoading ? (
-            <div className="p-8 text-center text-sm text-muted-foreground">{t.common.loading}</div>
+            <SkeletonList rows={8} />
           ) : (data?.items || []).length === 0 ? (
-            <div className="p-8 text-center text-sm text-muted-foreground">
-              <Search className="w-8 h-8 mx-auto mb-2 opacity-40" />
-              {t.common.noResults}
-            </div>
+            <EmptyState
+              icon={Search}
+              title={t.common.noResults}
+              description={locale === 'fr' ? 'Aucun patient trouvé. Essayez une autre recherche ou créez un nouveau patient.' : 'No patient found. Try another search or create a new patient.'}
+              action={{ label: t.patients.new, onClick: () => setNewPatientOpen(true) }}
+            />
           ) : (
             <AnimatePresence>
               {(data?.items || []).map((p: any, i: number) => (
                 <motion.button
                   key={p.id}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 15 }}
                   onClick={() => setSelectedPatientId(p.id)}
                   className="w-full grid grid-cols-12 gap-3 px-4 py-3 text-sm hover:bg-accent/50 transition-colors border-b border-border/20 text-left"
@@ -116,7 +130,7 @@ export function PatientsView({ locale }: { locale: Locale }) {
                     </div>
                   </div>
                   <div className="col-span-3 hidden md:flex items-center text-muted-foreground">
-                    {p.birthDate ? `${calculateAge(p.birthDate)} ans` : '—'}
+                    {p.birthDate ? `${calculateAge(p.birthDate)} ${locale === 'fr' ? 'ans' : 'yrs'}` : '—'}
                   </div>
                   <div className="col-span-3 hidden md:flex items-center text-muted-foreground text-xs">
                     {p.consultations?.[0]?.startAt ? formatDate(p.consultations[0].startAt, locale) : '—'}
@@ -150,7 +164,7 @@ export function PatientsView({ locale }: { locale: Locale }) {
       <Sheet open={!!selectedPatientId} onOpenChange={(o) => !o && setSelectedPatientId(null)}>
         <SheetContent side="right" className="glass-base w-full sm:max-w-2xl p-0 overflow-y-auto">
           {loadingDetail || !selectedPatient ? (
-            <div className="p-8 text-center text-sm text-muted-foreground">{t.common.loading}</div>
+            <div className="p-8"><SkeletonList rows={6} /></div>
           ) : (
             <PatientDetail patient={selectedPatient} locale={locale} />
           )}
@@ -165,8 +179,16 @@ export function PatientsView({ locale }: { locale: Locale }) {
 
 function PatientDetail({ patient, locale }: { patient: any; locale: Locale }) {
   const t = getDict(locale)
+  const qc = useQueryClient()
   const age = patient.birthDate ? calculateAge(patient.birthDate) : null
   const bmi = calculateBmi(patient.weightKg, patient.heightCm)
+  const [allergyDialog, setAllergyDialog] = useState(false)
+  const [vitalDialog, setVitalDialog] = useState(false)
+  const [breakGlassDialog, setBreakGlassDialog] = useState(false)
+
+  const refresh = () => {
+    qc.invalidateQueries({ queryKey: ['patient', patient.id] })
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -196,6 +218,14 @@ function PatientDetail({ patient, locale }: { patient: any; locale: Locale }) {
               </SheetDescription>
             </div>
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setBreakGlassDialog(true)}
+            className="text-destructive border-destructive/30 hover:bg-destructive/10 shrink-0"
+          >
+            <Lock className="w-3.5 h-3.5" /> {locale === 'fr' ? 'Break-glass' : 'Break-glass'}
+          </Button>
         </div>
         {/* Quick stats */}
         <div className="grid grid-cols-4 gap-2 mt-4">
@@ -263,7 +293,15 @@ function PatientDetail({ patient, locale }: { patient: any; locale: Locale }) {
 
           {/* Allergies */}
           <section>
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">{t.patients.allergies}</h3>
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t.patients.allergies}</h3>
+              <button
+                onClick={() => setAllergyDialog(true)}
+                className="text-[11px] text-primary hover:underline flex items-center gap-1"
+              >
+                <Plus className="w-3 h-3" /> {t.patients.newAllergy}
+              </button>
+            </div>
             {patient.allergies?.length > 0 ? (
               <div className="space-y-1.5">
                 {patient.allergies.map((a: any) => (
@@ -284,25 +322,21 @@ function PatientDetail({ patient, locale }: { patient: any; locale: Locale }) {
             )}
           </section>
 
-          {/* Vitals */}
-          <section>
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">{t.patients.vitals}</h3>
-            {patient.vitals?.length > 0 ? (
-              <div className="grid grid-cols-2 gap-2">
-                {patient.vitals.slice(0, 6).map((v: any) => (
-                  <div key={v.id} className="p-2 rounded-lg glass-base">
-                    <p className="text-[10px] text-muted-foreground uppercase">
-                      {vitalLabel(v.type, t)}
-                    </p>
-                    <p className="text-sm font-medium font-mono">{v.value} <span className="text-[10px] text-muted-foreground">{v.unit}</span></p>
-                    <p className="text-[10px] text-muted-foreground">{formatDate(v.recordedAt, locale)}</p>
-                  </div>
-                ))}
+          {/* Vitals with chart */}
+          {patient.vitals?.length > 0 && (
+            <section>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t.patients.vitals}</h3>
+                <button
+                  onClick={() => setVitalDialog(true)}
+                  className="text-[11px] text-primary hover:underline flex items-center gap-1"
+                >
+                  <Plus className="w-3 h-3" /> {t.patients.newVital}
+                </button>
               </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">{t.patients.noVitals}</p>
-            )}
-          </section>
+              <VitalsChart vitals={patient.vitals} locale={locale} />
+            </section>
+          )}
 
           {/* Patient Timeline — signature feature per master prompt §13 */}
           <section>
@@ -355,7 +389,7 @@ function PatientDetail({ patient, locale }: { patient: any; locale: Locale }) {
                     {c.assessment && <p className="text-[11px] text-muted-foreground mt-1 line-clamp-2">{c.assessment}</p>}
                     {c.aiDrafted && (
                       <span className="status-pill text-glass-accent mt-1.5 inline-flex text-[10px]">
-                        {t.ai.badge} · {Math.round(c.aiConfidence * 100)}%
+                        <Sparkles className="w-3 h-3" /> {t.ai.badge} · {Math.round(c.aiConfidence * 100)}%
                       </span>
                     )}
                   </div>
@@ -431,20 +465,254 @@ function PatientDetail({ patient, locale }: { patient: any; locale: Locale }) {
           )}
         </div>
       </ScrollArea>
+
+      {/* Inline dialogs */}
+      <AddAllergyDialog open={allergyDialog} onOpenChange={setAllergyDialog} patientId={patient.id} onSuccess={refresh} locale={locale} />
+      <AddVitalDialog open={vitalDialog} onOpenChange={setVitalDialog} patientId={patient.id} onSuccess={refresh} locale={locale} />
+      <BreakGlassDialog open={breakGlassDialog} onOpenChange={setBreakGlassDialog} patient={patient} locale={locale} />
     </div>
   )
 }
 
-function vitalLabel(type: string, t: any): string {
-  const map: Record<string, string> = {
-    blood_pressure: t.patients.bloodPressure,
-    heart_rate: t.patients.heartRate,
-    temperature: t.patients.temperature,
-    spo2: t.patients.spo2,
-    weight: t.common.weight || 'Weight',
-    height: t.common.height || 'Height',
+function AddAllergyDialog({ open, onOpenChange, patientId, onSuccess, locale }: any) {
+  const t = getDict(locale)
+  const [substance, setSubstance] = useState('')
+  const [severity, setSeverity] = useState('moderate')
+  const [submitting, setSubmitting] = useState(false)
+
+  const submit = async () => {
+    if (!substance.trim()) return
+    setSubmitting(true)
+    try {
+      const res = await fetch(`/api/patients/${patientId}/allergies`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ substance, severity }),
+      })
+      if (!res.ok) throw new Error('Failed')
+      toast.success(locale === 'fr' ? 'Allergie ajoutée' : 'Allergy added')
+      setSubstance('')
+      setSeverity('moderate')
+      onSuccess()
+      onOpenChange(false)
+    } catch (e) {
+      toast.error((e as Error).message)
+    } finally {
+      setSubmitting(false)
+    }
   }
-  return map[type] || type
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="glass-floating max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-destructive" />
+            {t.patients.newAllergy}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3 py-2">
+          <div className="space-y-1.5">
+            <Label>{locale === 'fr' ? 'Substance' : 'Substance'}</Label>
+            <Input value={substance} onChange={(e) => setSubstance(e.target.value)} placeholder={locale === 'fr' ? 'ex: Pénicilline' : 'e.g. Penicillin'} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>{locale === 'fr' ? 'Sévérité' : 'Severity'}</Label>
+            <Select value={severity} onValueChange={setSeverity}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent className="glass-floating">
+                <SelectItem value="mild">{locale === 'fr' ? 'Légère' : 'Mild'}</SelectItem>
+                <SelectItem value="moderate">{locale === 'fr' ? 'Modérée' : 'Moderate'}</SelectItem>
+                <SelectItem value="severe">{locale === 'fr' ? 'Sévère' : 'Severe'}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>{t.common.cancel}</Button>
+          <Button onClick={submit} disabled={submitting || !substance.trim()}>{t.common.save}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function AddVitalDialog({ open, onOpenChange, patientId, onSuccess, locale }: any) {
+  const t = getDict(locale)
+  const [type, setType] = useState('blood_pressure')
+  const [value, setValue] = useState('')
+  const [unit, setUnit] = useState('mmHg')
+  const [submitting, setSubmitting] = useState(false)
+
+  const typeUnits: Record<string, string> = {
+    blood_pressure: 'mmHg',
+    heart_rate: 'bpm',
+    temperature: '°C',
+    spo2: '%',
+    weight: 'kg',
+    height: 'cm',
+  }
+
+  const handleTypeChange = (v: string) => {
+    setType(v)
+    setUnit(typeUnits[v] || '')
+  }
+
+  const submit = async () => {
+    if (!value.trim()) return
+    setSubmitting(true)
+    try {
+      const res = await fetch(`/api/patients/${patientId}/vitals`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type, value, unit, recordedBy: 'Dr. Current' }),
+      })
+      if (!res.ok) throw new Error('Failed')
+      toast.success(locale === 'fr' ? 'Constante enregistrée' : 'Vital recorded')
+      setValue('')
+      onSuccess()
+      onOpenChange(false)
+    } catch (e) {
+      toast.error((e as Error).message)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="glass-floating max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Activity className="w-4 h-4 text-primary" />
+            {t.patients.newVital}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3 py-2">
+          <div className="space-y-1.5">
+            <Label>{locale === 'fr' ? 'Type' : 'Type'}</Label>
+            <Select value={type} onValueChange={handleTypeChange}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent className="glass-floating">
+                <SelectItem value="blood_pressure">{t.patients.bloodPressure}</SelectItem>
+                <SelectItem value="heart_rate">{t.patients.heartRate}</SelectItem>
+                <SelectItem value="temperature">{t.patients.temperature}</SelectItem>
+                <SelectItem value="spo2">{t.patients.spo2}</SelectItem>
+                <SelectItem value="weight">{t.patients.weight}</SelectItem>
+                <SelectItem value="height">{t.patients.height}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1.5">
+              <Label>{locale === 'fr' ? 'Valeur' : 'Value'}</Label>
+              <Input value={value} onChange={(e) => setValue(e.target.value)} placeholder={type === 'blood_pressure' ? '120/80' : '...'} className="font-mono" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>{locale === 'fr' ? 'Unité' : 'Unit'}</Label>
+              <Input value={unit} onChange={(e) => setUnit(e.target.value)} />
+            </div>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>{t.common.cancel}</Button>
+          <Button onClick={submit} disabled={submitting || !value.trim()}>{t.common.save}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function BreakGlassDialog({ open, onOpenChange, patient, locale }: any) {
+  const t = getDict(locale)
+  const [reason, setReason] = useState('')
+  const [justification, setJustification] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+
+  const submit = async () => {
+    if (reason.length < 10 || justification.length < 20) return
+    setSubmitting(true)
+    try {
+      const res = await fetch('/api/break-glass', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          patientId: patient.id,
+          reason,
+          justification,
+        }),
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.error || 'Failed')
+      }
+      const result = await res.json()
+      toast.success(locale === 'fr' ? `Accès de secours enregistré — hash: ${result.hash.slice(0, 12)}…` : `Break-glass logged — hash: ${result.hash.slice(0, 12)}…`)
+      toast.warning(locale === 'fr' ? 'Officer de conformité notifié' : 'Compliance officer notified', { duration: 5000 })
+      setReason('')
+      setJustification('')
+      onOpenChange(false)
+    } catch (e) {
+      toast.error((e as Error).message)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="glass-floating max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-destructive">
+            <Lock className="w-5 h-5" />
+            {locale === 'fr' ? 'Accès de secours (Break-Glass)' : 'Break-Glass Emergency Access'}
+          </DialogTitle>
+          <DialogDescription className="text-destructive/80">
+            {locale === 'fr'
+              ? `Vous êtes sur le point d'accéder au dossier de ${patient.firstName} ${patient.lastName} hors des règles normales d'accès. Cette action sera journalisée et notifiée à l'officier de conformité.`
+              : `You are about to access ${patient.firstName} ${patient.lastName}'s record outside normal access rules. This action will be logged and the compliance officer will be notified.`}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3 py-2">
+          <div className="space-y-1.5">
+            <Label>{locale === 'fr' ? 'Raison de l\'urgence *' : 'Emergency reason *'}</Label>
+            <Input
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder={locale === 'fr' ? 'ex: Patient inconscient, urgence vitale' : 'e.g. Patient unconscious, life-threatening'}
+            />
+            {reason.length > 0 && reason.length < 10 && (
+              <p className="text-[10px] text-destructive">{locale === 'fr' ? 'Minimum 10 caractères' : 'Minimum 10 characters'}</p>
+            )}
+          </div>
+          <div className="space-y-1.5">
+            <Label>{locale === 'fr' ? 'Justification détaquée *' : 'Detailed justification *'}</Label>
+            <Textarea
+              rows={4}
+              value={justification}
+              onChange={(e) => setJustification(e.target.value)}
+              placeholder={locale === 'fr' ? 'Décrivez la situation clinique nécessitant cet accès...' : 'Describe the clinical situation requiring this access...'}
+            />
+            {justification.length > 0 && justification.length < 20 && (
+              <p className="text-[10px] text-destructive">{locale === 'fr' ? 'Minimum 20 caractères' : 'Minimum 20 characters'}</p>
+            )}
+            <p className="text-[10px] text-muted-foreground">{justification.length}/20</p>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>{t.common.cancel}</Button>
+          <Button
+            onClick={submit}
+            disabled={submitting || reason.length < 10 || justification.length < 20}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            <Lock className="w-3.5 h-3.5" />
+            {locale === 'fr' ? 'Confirmer l\'accès de secours' : 'Confirm break-glass'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
 }
 
 function timelineColor(type: string): string {

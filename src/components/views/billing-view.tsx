@@ -2,11 +2,11 @@
 
 import { useApp } from '@/lib/store'
 import { getDict, formatCurrency, formatDate, type Locale } from '@/lib/i18n'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Receipt, Plus, Search, Download, Check, Clock, AlertTriangle,
-  CreditCard, Banknote, Building2, FileText,
+  CreditCard, Banknote, Building2, FileText, Loader2,
 } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
@@ -22,7 +22,6 @@ import {
 import { StatusPill, invoiceStatusVariant } from '@/components/common/status-pill'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { toast } from 'sonner'
-import { Loader2 } from 'lucide-react'
 
 interface InvoiceList { items: any[]; total: number }
 
@@ -140,58 +139,21 @@ export function BillingView({ locale }: { locale: Locale }) {
               <Receipt className="w-8 h-8 mx-auto mb-2 opacity-40" />
               {t.common.noResults}
             </div>
-          ) : (
-            (data?.items || []).map((inv: any, i: number) => (
-              <motion.button
-                key={inv.id}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: i * 15 }}
-                onClick={() => { setSelectedPatientId(inv.patientId); setView('patients') }}
-                className="w-full grid grid-cols-12 gap-3 px-4 py-3 hover:bg-accent/40 transition-colors border-b border-border/20 text-left"
-              >
-                <div className="col-span-3 md:col-span-2">
-                  <p className="text-xs font-mono font-semibold">{inv.number}</p>
-                  <p className="text-[10px] text-muted-foreground">{inv.items?.length || 0} {locale === 'fr' ? 'lignes' : 'items'}</p>
-                </div>
-                <div className="col-span-4 md:col-span-3 min-w-0">
-                  <p className="text-xs font-medium truncate">{inv.patient?.firstName} {inv.patient?.lastName}</p>
-                  <p className="text-[10px] text-muted-foreground truncate">{inv.patient?.mutuelle || '—'}</p>
-                </div>
-                <div className="col-span-2 hidden md:flex items-center text-xs text-muted-foreground">
-                  {formatDate(inv.issueDate, locale)}
-                </div>
-                <div className="col-span-2 hidden md:flex items-center">
-                  {inv.tiersPayant ? (
-                    <Badge variant="secondary" className="text-[10px]">CPAM</Badge>
-                  ) : (
-                    <span className="text-[10px] text-muted-foreground">—</span>
-                  )}
-                </div>
-                <div className="col-span-3 md:col-span-2 text-right">
-                  <p className="text-xs font-semibold tabular-nums">{formatCurrency(inv.total, locale)}</p>
-                  {inv.patientShare > 0 && inv.patientShare !== inv.total && (
-                    <p className="text-[10px] text-muted-foreground tabular-nums">
-                      {locale === 'fr' ? 'Patient' : 'Patient'}: {formatCurrency(inv.patientShare, locale)}
-                    </p>
-                  )}
-                </div>
-                <div className="col-span-2 md:col-span-2 flex items-center justify-end">
-                  <StatusPill
-                    status={inv.status}
-                    variant={invoiceStatusVariant(inv.status)}
-                    label={t.billing.status[inv.status as keyof typeof t.billing.status]}
-                  />
-                </div>
-                <div className="col-span-2 md:col-span-1 flex items-center justify-end gap-1">
-                  {inv.status === 'paid' ? (
-                    <Check className="w-3.5 h-3.5 text-success" />
-                  ) : (
-                    <CreditCard className="w-3.5 h-3.5 text-muted-foreground" />
-                  )}
-                </div>
-              </motion.button>
-            ))
+          ) : null}
+          {!isLoading && (data?.items || []).length > 0 && (
+            <AnimatePresence>
+              {(data?.items || []).map((inv: any, i: number) => (
+                <InvoiceRow
+                  key={inv.id}
+                  inv={inv}
+                  i={i}
+                  locale={locale}
+                  t={t}
+                  onClick={() => { setSelectedPatientId(inv.patientId); setView('patients') }}
+                  onPaid={() => qc.invalidateQueries({ queryKey: ['invoices'] })}
+                />
+              ))}
+            </AnimatePresence>
           )}
         </ScrollArea>
       </div>
@@ -204,6 +166,90 @@ export function BillingView({ locale }: { locale: Locale }) {
         onSuccess={() => qc.invalidateQueries({ queryKey: ['invoices'] })}
       />
     </div>
+  )
+}
+
+function InvoiceRow({ inv, i, locale, t, onClick, onPaid }: any) {
+  const [marking, setMarking] = useState(false)
+
+  const handleMarkPaid = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setMarking(true)
+    try {
+      const res = await fetch(`/api/invoices/${inv.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'paid', paymentMethod: 'card' }),
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.error || 'Failed')
+      }
+      toast.success(locale === 'fr' ? `Facture ${inv.number} marquée comme payée` : `Invoice ${inv.number} marked as paid`)
+      onPaid()
+    } catch (e) {
+      toast.error((e as Error).message)
+    } finally {
+      setMarking(false)
+    }
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ delay: i * 15 }}
+      onClick={onClick}
+      className="w-full grid grid-cols-12 gap-3 px-4 py-3 hover:bg-accent/40 transition-colors border-b border-border/20 text-left cursor-pointer"
+    >
+      <div className="col-span-3 md:col-span-2">
+        <p className="text-xs font-mono font-semibold">{inv.number}</p>
+        <p className="text-[10px] text-muted-foreground">{inv.items?.length || 0} {locale === 'fr' ? 'lignes' : 'items'}</p>
+      </div>
+      <div className="col-span-4 md:col-span-3 min-w-0">
+        <p className="text-xs font-medium truncate">{inv.patient?.firstName} {inv.patient?.lastName}</p>
+        <p className="text-[10px] text-muted-foreground truncate">{inv.patient?.mutuelle || '—'}</p>
+      </div>
+      <div className="col-span-2 hidden md:flex items-center text-xs text-muted-foreground">
+        {formatDate(inv.issueDate, locale)}
+      </div>
+      <div className="col-span-2 hidden md:flex items-center">
+        {inv.tiersPayant ? (
+          <Badge variant="secondary" className="text-[10px]">CPAM</Badge>
+        ) : (
+          <span className="text-[10px] text-muted-foreground">—</span>
+        )}
+      </div>
+      <div className="col-span-3 md:col-span-2 text-right">
+        <p className="text-xs font-semibold tabular-nums">{formatCurrency(inv.total, locale)}</p>
+        {inv.patientShare > 0 && inv.patientShare !== inv.total && (
+          <p className="text-[10px] text-muted-foreground tabular-nums">
+            {locale === 'fr' ? 'Patient' : 'Patient'}: {formatCurrency(inv.patientShare, locale)}
+          </p>
+        )}
+      </div>
+      <div className="col-span-3 md:col-span-2 flex items-center justify-end gap-1">
+        <StatusPill
+          status={inv.status}
+          variant={invoiceStatusVariant(inv.status)}
+          label={t.billing.status[inv.status as keyof typeof t.billing.status]}
+        />
+      </div>
+      <div className="col-span-2 md:col-span-1 flex items-center justify-end gap-1">
+        {inv.status === 'paid' ? (
+          <Check className="w-3.5 h-3.5 text-success" />
+        ) : (
+          <button
+            onClick={handleMarkPaid}
+            disabled={marking}
+            className="p-1 rounded hover:bg-success/20 text-success transition-colors"
+            title={locale === 'fr' ? 'Marquer payée' : 'Mark as paid'}
+          >
+            {marking ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+          </button>
+        )}
+      </div>
+    </motion.div>
   )
 }
 

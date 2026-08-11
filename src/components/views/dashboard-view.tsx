@@ -4,6 +4,8 @@ import { useApp } from '@/lib/store'
 import { getDict, formatCurrency, formatPercent, formatTime, type Locale } from '@/lib/i18n'
 import { StatCard } from '@/components/common/stat-card'
 import { StatusPill, appointmentStatusVariant, noShowRiskVariant } from '@/components/common/status-pill'
+import { SkeletonCard, SkeletonChart } from '@/components/common/skeleton'
+import { EmptyState } from '@/components/common/empty-state'
 import { motion } from 'framer-motion'
 import { useQuery } from '@tanstack/react-query'
 import {
@@ -93,38 +95,44 @@ export function DashboardView({ locale }: { locale: Locale }) {
     <div className="p-4 md:p-6 space-y-6 pb-24">
       {/* KPI grid */}
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-        <StatCard
-          label={t.dashboard.kpi.patients}
-          value={stats?.totalPatients ?? '—'}
-          icon={Users}
-          accent="primary"
-          trend={{ value: locale === 'fr' ? '+3 ce mois' : '+3 this month', direction: 'up' }}
-          delay={0}
-        />
-        <StatCard
-          label={t.dashboard.kpi.appointmentsToday}
-          value={stats?.todaysAppointments ?? '—'}
-          icon={CalendarClock}
-          accent="info"
-          trend={{ value: locale === 'fr' ? '8 planifiés' : '8 scheduled', direction: 'neutral' }}
-          delay={50}
-        />
-        <StatCard
-          label={t.dashboard.kpi.revenue}
-          value={stats ? formatCurrency(stats.revenueToday, locale) : '—'}
-          icon={Receipt}
-          accent="success"
-          trend={{ value: '+12%', direction: 'up' }}
-          delay={100}
-        />
-        <StatCard
-          label={t.dashboard.kpi.noShowRate}
-          value={stats ? formatPercent(stats.noShowRate, locale) : '—'}
-          icon={TrendingDown}
-          accent="warning"
-          trend={{ value: '-2%', direction: 'down' }}
-          delay={150}
-        />
+        {!stats ? (
+          <>{<SkeletonCard />}{<SkeletonCard />}{<SkeletonCard />}{<SkeletonCard />}</>
+        ) : (
+          <>
+            <StatCard
+              label={t.dashboard.kpi.patients}
+              value={stats.totalPatients}
+              icon={Users}
+              accent="primary"
+              trend={{ value: locale === 'fr' ? '+3 ce mois' : '+3 this month', direction: 'up' }}
+              delay={0}
+            />
+            <StatCard
+              label={t.dashboard.kpi.appointmentsToday}
+              value={stats.todaysAppointments}
+              icon={CalendarClock}
+              accent="info"
+              trend={{ value: locale === 'fr' ? '8 planifiés' : '8 scheduled', direction: 'neutral' }}
+              delay={50}
+            />
+            <StatCard
+              label={t.dashboard.kpi.revenue}
+              value={formatCurrency(stats.revenueToday, locale)}
+              icon={Receipt}
+              accent="success"
+              trend={{ value: '+12%', direction: 'up' }}
+              delay={100}
+            />
+            <StatCard
+              label={t.dashboard.kpi.noShowRate}
+              value={formatPercent(stats.noShowRate, locale)}
+              icon={TrendingDown}
+              accent="warning"
+              trend={{ value: '-2%', direction: 'down' }}
+              delay={150}
+            />
+          </>
+        )}
       </section>
 
       {/* Charts grid */}
@@ -367,10 +375,11 @@ export function DashboardView({ locale }: { locale: Locale }) {
               </button>
             ))}
             {(todayAppts?.items || []).length === 0 && (
-              <div className="p-8 text-center text-sm text-muted-foreground">
-                <Clock className="w-8 h-8 mx-auto mb-2 opacity-40" />
-                {t.common.noData}
-              </div>
+              <EmptyState
+                icon={Clock}
+                title={t.common.noData}
+                description={locale === 'fr' ? 'Aucun rendez-vous prévu aujourd\'hui.' : 'No appointments scheduled today.'}
+              />
             )}
           </div>
         </motion.div>
