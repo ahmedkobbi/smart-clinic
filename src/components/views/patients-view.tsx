@@ -7,7 +7,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Search, Plus, Phone, Mail, MapPin, Droplet, Activity, Calendar,
   Pill, Receipt, FileText, AlertTriangle, ShieldCheck, ChevronRight,
-  Heart, Weight, Ruler, Thermometer, Lock, X, Sparkles,
+  Heart, Weight, Ruler, Thermometer, Lock, X, Sparkles, FileDown,
 } from 'lucide-react'
 import { useState, useMemo } from 'react'
 import { Input } from '@/components/ui/input'
@@ -30,6 +30,7 @@ import { EmptyState } from '@/components/common/empty-state'
 import { SkeletonList } from '@/components/common/skeleton'
 import { VitalsChart } from '@/components/common/vitals-chart'
 import { PatientForm } from './patient-form'
+import { PrescriptionForm } from './prescription-form'
 import { toast } from 'sonner'
 
 interface PatientList {
@@ -185,10 +186,20 @@ function PatientDetail({ patient, locale }: { patient: any; locale: Locale }) {
   const [allergyDialog, setAllergyDialog] = useState(false)
   const [vitalDialog, setVitalDialog] = useState(false)
   const [breakGlassDialog, setBreakGlassDialog] = useState(false)
+  const [prescriptionDialog, setPrescriptionDialog] = useState(false)
 
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ['patient', patient.id] })
   }
+
+  // Fetch practitioners for prescription form
+  const { data: staffData } = useQuery({
+    queryKey: ['staff'],
+    queryFn: async () => {
+      const res = await fetch('/api/settings?section=staff', { cache: 'no-store' })
+      return res.json()
+    },
+  })
 
   return (
     <div className="flex flex-col h-full">
@@ -218,14 +229,25 @@ function PatientDetail({ patient, locale }: { patient: any; locale: Locale }) {
               </SheetDescription>
             </div>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setBreakGlassDialog(true)}
-            className="text-destructive border-destructive/30 hover:bg-destructive/10 shrink-0"
-          >
-            <Lock className="w-3.5 h-3.5" /> {locale === 'fr' ? 'Break-glass' : 'Break-glass'}
-          </Button>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <a
+              href={`/api/patients/${patient.id}/summary`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md glass-button text-xs font-medium hover:text-primary transition-colors"
+            >
+              <FileDown className="w-3.5 h-3.5" />
+              <span className="hidden md:inline">{locale === 'fr' ? 'Synthèse' : 'Summary'}</span>
+            </a>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setBreakGlassDialog(true)}
+              className="text-destructive border-destructive/30 hover:bg-destructive/10"
+            >
+              <Lock className="w-3.5 h-3.5" /> <span className="hidden md:inline">Break-glass</span>
+            </Button>
+          </div>
         </div>
         {/* Quick stats */}
         <div className="grid grid-cols-4 gap-2 mt-4">
@@ -399,9 +421,17 @@ function PatientDetail({ patient, locale }: { patient: any; locale: Locale }) {
           )}
 
           {/* Active prescriptions */}
-          {patient.prescriptions?.length > 0 && (
-            <section>
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">{t.patients.prescriptions}</h3>
+          <section>
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t.patients.prescriptions}</h3>
+              <button
+                onClick={() => setPrescriptionDialog(true)}
+                className="text-[11px] text-primary hover:underline flex items-center gap-1"
+              >
+                <Plus className="w-3 h-3" /> {locale === 'fr' ? 'Ordonnance' : 'Prescribe'}
+              </button>
+            </div>
+            {patient.prescriptions?.length > 0 ? (
               <div className="space-y-1.5">
                 {patient.prescriptions.slice(0, 4).map((p: any) => (
                   <div key={p.id} className="p-2 rounded-lg glass-base flex items-start gap-2">
@@ -415,8 +445,10 @@ function PatientDetail({ patient, locale }: { patient: any; locale: Locale }) {
                   </div>
                 ))}
               </div>
-            </section>
-          )}
+            ) : (
+              <p className="text-sm text-muted-foreground">{locale === 'fr' ? 'Aucune ordonnance active' : 'No active prescriptions'}</p>
+            )}
+          </section>
 
           {/* Invoices */}
           {patient.invoices?.length > 0 && (
@@ -470,6 +502,15 @@ function PatientDetail({ patient, locale }: { patient: any; locale: Locale }) {
       <AddAllergyDialog open={allergyDialog} onOpenChange={setAllergyDialog} patientId={patient.id} onSuccess={refresh} locale={locale} />
       <AddVitalDialog open={vitalDialog} onOpenChange={setVitalDialog} patientId={patient.id} onSuccess={refresh} locale={locale} />
       <BreakGlassDialog open={breakGlassDialog} onOpenChange={setBreakGlassDialog} patient={patient} locale={locale} />
+      <PrescriptionForm
+        open={prescriptionDialog}
+        onOpenChange={setPrescriptionDialog}
+        patientId={patient.id}
+        patientAllergies={patient.allergies || []}
+        practitioners={staffData?.practitioners || []}
+        locale={locale}
+        onSuccess={refresh}
+      />
     </div>
   )
 }

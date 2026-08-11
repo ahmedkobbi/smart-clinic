@@ -3,12 +3,17 @@
 import { useApp, type ViewKey } from '@/lib/store'
 import { getDict, type Locale } from '@/lib/i18n'
 import { motion } from 'framer-motion'
+import { signOut, type Session } from 'next-auth/react'
 import {
   LayoutDashboard, Users, CalendarClock, FileText, Receipt,
-  ShieldCheck, Package, Settings, HeartPulse,
+  ShieldCheck, Package, Settings, HeartPulse, Leaf, Stethoscope,
+  LogOut,
 } from 'lucide-react'
+import {
+  Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
+} from '@/components/ui/tooltip'
 
-const NAV_ITEMS: { key: ViewKey; icon: any }[] = [
+const NAV_ITEMS: { key: ViewKey; icon: any; }[] = [
   { key: 'dashboard', icon: LayoutDashboard },
   { key: 'patients', icon: Users },
   { key: 'appointments', icon: CalendarClock },
@@ -16,10 +21,12 @@ const NAV_ITEMS: { key: ViewKey; icon: any }[] = [
   { key: 'billing', icon: Receipt },
   { key: 'audit', icon: ShieldCheck },
   { key: 'inventory', icon: Package },
+  { key: 'triage', icon: Stethoscope },
+  { key: 'sustainability', icon: Leaf },
   { key: 'settings', icon: Settings },
 ]
 
-export function Sidebar({ locale }: { locale: Locale }) {
+export function Sidebar({ locale, session }: { locale: Locale; session: Session | null }) {
   const { view, setView } = useApp()
   const t = getDict(locale)
 
@@ -38,7 +45,9 @@ export function Sidebar({ locale }: { locale: Locale }) {
         </motion.div>
         <div className="min-w-0">
           <h1 className="text-sm font-semibold leading-tight">{t.app.name}</h1>
-          <p className="text-[11px] text-muted-foreground leading-tight truncate">{t.app.tenant}</p>
+          <p className="text-[11px] text-muted-foreground leading-tight truncate">
+            {(session?.user as any)?.tenantName || t.app.tenant}
+          </p>
         </div>
       </div>
 
@@ -61,20 +70,43 @@ export function Sidebar({ locale }: { locale: Locale }) {
               className="glass-nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-foreground/70 hover:text-foreground hover:bg-accent/50"
             >
               <Icon className={`w-4 h-4 shrink-0 ${active ? 'text-primary' : ''}`} />
-              <span>{t.nav[item.key]}</span>
+              <span>{t.nav[item.key] || item.key}</span>
             </motion.button>
           )
         })}
       </nav>
 
-      {/* Deployment badge */}
-      <div className="m-3 p-3 rounded-xl glass-raised text-xs">
-        <div className="flex items-center justify-between mb-1">
-          <span className="font-medium">{t.footer.deployment}</span>
-          <span className="status-pill text-success">Live</span>
+      {/* User + deployment badge */}
+      <div className="m-3 space-y-2">
+        <div className="p-3 rounded-xl glass-raised">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-glass-accent flex items-center justify-center text-xs font-semibold text-primary-foreground">
+              {(session?.user?.name || '?').split(' ').map(w => w[0]).slice(0, 2).join('')}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-medium truncate">{session?.user?.name}</p>
+              <p className="text-[10px] text-muted-foreground truncate">{(session?.user as any)?.role}</p>
+            </div>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => signOut({ callbackUrl: '/login' })}
+                    className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>Déconnexion</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+          <div className="flex items-center justify-between text-[10px]">
+            <span className="text-muted-foreground">{t.footer.deployment}</span>
+            <span className="status-pill text-success">Live</span>
+          </div>
         </div>
-        <p className="text-[10px] text-muted-foreground leading-relaxed">{t.footer.compliant}</p>
-        <p className="text-[10px] text-muted-foreground mt-1">{t.footer.version}</p>
+        <p className="text-[10px] text-muted-foreground text-center">{t.footer.compliant}</p>
       </div>
     </aside>
   )

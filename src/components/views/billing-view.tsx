@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Receipt, Plus, Search, Download, Check, Clock, AlertTriangle,
-  CreditCard, Banknote, Building2, FileText, Loader2,
+  CreditCard, Banknote, Building2, FileText, Loader2, FileDown,
 } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
@@ -236,6 +236,16 @@ function InvoiceRow({ inv, i, locale, t, onClick, onPaid }: any) {
         />
       </div>
       <div className="col-span-2 md:col-span-1 flex items-center justify-end gap-1">
+        <a
+          href={`/api/invoices/${inv.id}/pdf`}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          className="p-1 rounded hover:bg-primary/20 text-primary transition-colors"
+          title={locale === 'fr' ? 'Télécharger PDF' : 'Download PDF'}
+        >
+          <FileDown className="w-3.5 h-3.5" />
+        </a>
         {inv.status === 'paid' ? (
           <Check className="w-3.5 h-3.5 text-success" />
         ) : (

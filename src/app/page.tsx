@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import { useSession } from 'next-auth/react'
 import { useApp } from '@/lib/store'
 import { Sidebar } from '@/components/layout/sidebar'
 import { TopBar } from '@/components/layout/topbar'
@@ -15,10 +16,13 @@ import { BillingView } from '@/components/views/billing-view'
 import { AuditView } from '@/components/views/audit-view'
 import { InventoryView } from '@/components/views/inventory-view'
 import { SettingsView } from '@/components/views/settings-view'
+import { SustainabilityView } from '@/components/views/sustainability-view'
+import { TriageView } from '@/components/views/triage-view'
 import { Menu } from 'lucide-react'
 import { useState } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AnimatePresence, motion } from 'framer-motion'
+import { LoginScreen } from '@/components/login-screen'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -32,6 +36,7 @@ const queryClient = new QueryClient({
 
 function AppShell() {
   const { view, theme, density, locale } = useApp()
+  const { data: session, status } = useSession()
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
 
   // Apply theme + density to document
@@ -48,9 +53,26 @@ function AppShell() {
     document.documentElement.lang = locale
   }, [locale])
 
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="glass-floating rounded-2xl p-8 flex flex-col items-center gap-3">
+          <div className="w-12 h-12 rounded-xl glass-raised flex items-center justify-center animate-pulse-glow">
+            <HeartPulse className="w-6 h-6 text-primary" />
+          </div>
+          <p className="text-sm text-muted-foreground">Chargement…</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!session) {
+    return <LoginScreen />
+  }
+
   return (
     <div className="flex min-h-screen">
-      <Sidebar locale={locale} />
+      <Sidebar locale={locale} session={session} />
 
       {/* Mobile menu trigger */}
       <button
@@ -64,7 +86,7 @@ function AppShell() {
       <MobileNav locale={locale} open={mobileNavOpen} onOpenChange={setMobileNavOpen} />
 
       <div className="flex-1 flex flex-col min-w-0">
-        <TopBar locale={locale} />
+        <TopBar locale={locale} session={session} />
         <main className="flex-1 animate-fade-in">
           <AnimatePresence mode="wait">
             <motion.div
@@ -82,6 +104,8 @@ function AppShell() {
               {view === 'audit' && <AuditView locale={locale} />}
               {view === 'inventory' && <InventoryView locale={locale} />}
               {view === 'settings' && <SettingsView locale={locale} />}
+              {view === 'sustainability' && <SustainabilityView locale={locale} />}
+              {view === 'triage' && <TriageView locale={locale} />}
             </motion.div>
           </AnimatePresence>
         </main>
@@ -92,6 +116,9 @@ function AppShell() {
     </div>
   )
 }
+
+// Inline import to avoid circular dependency issues
+import { HeartPulse } from 'lucide-react'
 
 export default function Home() {
   return (

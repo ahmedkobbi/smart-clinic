@@ -16,6 +16,8 @@ export type ViewKey =
   | 'audit'
   | 'inventory'
   | 'settings'
+  | 'sustainability'
+  | 'triage'
 
 export type Theme = 'light' | 'dark'
 export type Density = 'comfortable' | 'compact'

@@ -3,7 +3,8 @@
 // Run: bun run db:seed
 
 import { PrismaClient } from '@prisma/client'
-import { createHash, randomBytes } from 'crypto'
+import { createHash } from 'crypto'
+import bcrypt from 'bcryptjs'
 
 const db = new PrismaClient()
 
@@ -11,10 +12,24 @@ function sha256(s: string): string {
   return createHash('sha256').update(s, 'utf8').digest('hex')
 }
 
-function hashPassword(plain: string): string {
-  const salt = randomBytes(16).toString('hex')
-  const hash = createHash('sha256').update(salt + plain).digest('hex')
-  return `sha256$${salt}$${hash}`
+// Use bcrypt for proper password hashing (NextAuth compatible)
+async function hashPassword(plain: string): Promise<string> {
+  const salt = await bcrypt.genSalt(12)
+  return bcrypt.hash(plain, salt)
+}
+
+// Verify password (used by NextAuth credentials provider)
+export async function verifyPassword(plain: string, hash: string): Promise<boolean> {
+  // Support both old sha256 format and new bcrypt
+  if (hash.startsWith('$2a$') || hash.startsWith('$2b$') || hash.startsWith('$2y$')) {
+    return bcrypt.compare(plain, hash)
+  }
+  if (hash.startsWith('sha256$')) {
+    const [, salt, stored] = hash.split('$')
+    const check = createHash('sha256').update(salt + plain).digest('hex')
+    return check === stored
+  }
+  return false
 }
 
 const PATIENTS = [
@@ -200,7 +215,7 @@ async function seed() {
   })
   console.log(`  ✓ Branches: ${bastille.name}, ${nation.name}`)
 
-  const passwordHash = hashPassword('smartclinic2026')
+  const passwordHash = await hashPassword('smartclinic2026')
   const users = await db.$transaction([
     db.user.create({ data: { tenantId: tenant.id, email: 'admin@cabinet-lumiere.fr', name: 'Claire Fontaine', role: 'admin', passwordHash } }),
     db.user.create({ data: { tenantId: tenant.id, email: 'reception@cabinet-lumiere.fr', name: 'Marie Lefort', role: 'receptionist', passwordHash } }),
