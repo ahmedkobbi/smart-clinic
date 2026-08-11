@@ -1,7 +1,7 @@
 'use client'
 
 import { useApp } from '@/lib/store'
-import { type Locale } from '@/lib/i18n'
+import { type Locale, getDict } from '@/lib/i18n'
 import { type Session } from 'next-auth/react'
 import {
   Search, Command, Globe, Moon, Sun, ChevronRight,
@@ -18,10 +18,12 @@ const TITLE_MAP: Record<string, { fr: string; en: string }> = {
   'admin-instances': { fr: 'Instances', en: 'Instances' },
   'admin-updates': { fr: 'Mises à jour', en: 'Updates' },
   'admin-actions': { fr: 'Journal admin', en: 'Admin log' },
+  'admin-telemetry': { fr: 'Télémétrie', en: 'Telemetry' },
 }
 
 export function AdminTopBar({ locale, session }: { locale: Locale; session: Session | null }) {
-  const { setCommandOpen, setLocale, toggleTheme, theme, view, setUserMode } = useApp()
+  const { setCommandOpen, setLocale, toggleTheme, theme, view } = useApp()
+  const t = getDict(locale)
   const [now, setNow] = useState(new Date())
 
   useEffect(() => {
@@ -37,7 +39,7 @@ export function AdminTopBar({ locale, session }: { locale: Locale; session: Sess
         {/* Breadcrumb */}
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground shrink-0">
           <Crown className="w-3.5 h-3.5 text-glass-warm" />
-          <span className="hidden md:inline">{locale === 'fr' ? 'Console Propriétaire' : 'Owner Console'}</span>
+          <span className="hidden md:inline">{t.admin.console}</span>
           <ChevronRight className="w-3 h-3 hidden md:inline" />
           <span className="font-medium text-foreground">{title}</span>
         </div>
@@ -85,14 +87,14 @@ export function AdminTopBar({ locale, session }: { locale: Locale; session: Sess
                 {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
               </button>
             </TooltipTrigger>
-            <TooltipContent>{theme === 'dark' ? 'Light' : 'Dark'}</TooltipContent>
+            <TooltipContent>{theme === 'dark' ? t.settings.themeLight : t.settings.themeDark}</TooltipContent>
           </Tooltip>
         </TooltipProvider>
 
         {/* Security status */}
         <div className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-lg glass-base text-[11px]">
           <ShieldCheck className="w-3.5 h-3.5 text-success" />
-          <span className="text-muted-foreground">{locale === 'fr' ? 'Sécurisé' : 'Secured'}</span>
+          <span className="text-muted-foreground">{t.admin.secured}</span>
         </div>
 
         {/* User chip */}

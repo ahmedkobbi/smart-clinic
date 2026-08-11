@@ -29,6 +29,7 @@ import { AdminLicensesView } from '@/components/views/admin-licenses-view'
 import { AdminInstancesView } from '@/components/views/admin-instances-view'
 import { AdminUpdatesView } from '@/components/views/admin-updates-view'
 import { AdminActionsView } from '@/components/views/admin-actions-view'
+import { AdminTelemetryView } from '@/components/views/admin-telemetry-view'
 import { Menu } from 'lucide-react'
 import { useState } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -109,6 +110,7 @@ function AppShell() {
                 {view === 'admin-instances' && <AdminInstancesView locale={locale} />}
                 {view === 'admin-updates' && <AdminUpdatesView locale={locale} />}
                 {view === 'admin-actions' && <AdminActionsView locale={locale} />}
+                {view === 'admin-telemetry' && <AdminTelemetryView locale={locale} />}
               </motion.div>
             </AnimatePresence>
           </main>

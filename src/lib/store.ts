@@ -28,6 +28,7 @@ export type ViewKey =
   | 'admin-instances'
   | 'admin-updates'
   | 'admin-actions'
+  | 'admin-telemetry'
 
 export type Theme = 'light' | 'dark'
 export type Density = 'comfortable' | 'compact'

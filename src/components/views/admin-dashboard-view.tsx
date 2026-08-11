@@ -1,19 +1,20 @@
 'use client'
 
 import { useApp } from '@/lib/store'
-import { type Locale } from '@/lib/i18n'
+import { getDict, formatCurrency, type Locale } from '@/lib/i18n'
 import { motion } from 'framer-motion'
 import { useQuery } from '@tanstack/react-query'
 import {
   KeyRound, Monitor, Activity, DollarSign, TrendingUp,
-  Users, AlertTriangle, CheckCircle2, Cpu, Zap, Clock,
+  AlertTriangle, CheckCircle2, Cpu, Zap, Clock,
 } from 'lucide-react'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
   PieChart, Pie, Cell, Area, AreaChart,
 } from 'recharts'
 import { SkeletonCard } from '@/components/common/skeleton'
-import { formatCurrency } from '@/lib/i18n'
+import { LiveIndicator } from '@/components/common/live-indicator'
+import { AnimatedNumber } from '@/components/common/animated-number'
 
 async function fetchAdminDashboard() {
   const res = await fetch('/api/admin/dashboard', { cache: 'no-store' })
@@ -36,7 +37,8 @@ const STATUS_COLORS = {
 }
 
 export function AdminDashboardView({ locale }: { locale: Locale }) {
-  const { data, isLoading } = useQuery({
+  const t = getDict(locale)
+  const { data, isLoading, isFetching, refetch, dataUpdatedAt } = useQuery({
     queryKey: ['admin-dashboard'],
     queryFn: fetchAdminDashboard,
     refetchInterval: 30_000,
@@ -68,12 +70,54 @@ export function AdminDashboardView({ locale }: { locale: Locale }) {
 
   return (
     <div className="p-4 md:p-6 space-y-6 pb-24">
-      {/* KPI grid */}
+      {/* Header with live indicator */}
+      <div className="flex flex-col md:flex-row md:items-center gap-3 justify-between">
+        <div>
+          <h2 className="text-lg font-semibold">{t.admin.overview.title}</h2>
+          <p className="text-xs text-muted-foreground">{t.admin.overview.subtitle}</p>
+        </div>
+        <LiveIndicator
+          isFetching={isFetching}
+          lastUpdated={dataUpdatedAt ? new Date(dataUpdatedAt) : null}
+          onRefresh={() => refetch()}
+          locale={locale}
+        />
+      </div>
+
+      {/* KPI grid with animated numbers */}
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-        <AdminStatCard label={locale === 'fr' ? 'Revenu mensuel (MRR)' : 'Monthly revenue (MRR)'} value={formatCurrency(stats.mrr, locale)} icon={DollarSign} accent="success" delay={0} trend="+12%" />
-        <AdminStatCard label={locale === 'fr' ? 'Licences actives' : 'Active licenses'} value={stats.activeLicenses} icon={KeyRound} accent="primary" delay={50} trend={`${stats.totalLicenses} ${locale === 'fr' ? 'total' : 'total'}`} />
-        <AdminStatCard label={locale === 'fr' ? 'Instances actives' : 'Active instances'} value={stats.activeInstances} icon={Monitor} accent="info" delay={100} trend={`${stats.totalInstances} ${locale === 'fr' ? 'total' : 'total'}`} />
-        <AdminStatCard label={locale === 'fr' ? 'Baux actifs' : 'Active leases'} value={stats.activeLeases} icon={Activity} accent="warning" delay={150} trend="30j" />
+        <AdminStatCard
+          label={t.admin.overview.mrr}
+          value={<AnimatedNumber value={stats.mrr} format={(n) => formatCurrency(n, locale)} />}
+          icon={DollarSign}
+          accent="success"
+          delay={0}
+          trend="+12% MoM"
+        />
+        <AdminStatCard
+          label={t.admin.overview.activeLicenses}
+          value={<AnimatedNumber value={stats.activeLicenses} />}
+          icon={KeyRound}
+          accent="primary"
+          delay={50}
+          trend={`${stats.totalLicenses} ${t.admin.overview.total}`}
+        />
+        <AdminStatCard
+          label={t.admin.overview.activeInstances}
+          value={<AnimatedNumber value={stats.activeInstances} />}
+          icon={Monitor}
+          accent="info"
+          delay={100}
+          trend={`${stats.totalInstances} ${t.admin.overview.total}`}
+        />
+        <AdminStatCard
+          label={t.admin.overview.activeLeases}
+          value={<AnimatedNumber value={stats.activeLeases} />}
+          icon={Activity}
+          accent="warning"
+          delay={150}
+          trend="30j"
+        />
       </section>
 
       {/* Revenue + charts */}
@@ -87,8 +131,10 @@ export function AdminDashboardView({ locale }: { locale: Locale }) {
         >
           <div className="flex items-start justify-between mb-4">
             <div>
-              <p className="text-xs uppercase font-semibold tracking-wider text-muted-foreground">ARR</p>
-              <p className="text-3xl font-bold mt-1">{formatCurrency(stats.arr, locale)}</p>
+              <p className="text-xs uppercase font-semibold tracking-wider text-muted-foreground">{t.admin.overview.arr}</p>
+              <p className="text-3xl font-bold mt-1">
+                <AnimatedNumber value={stats.arr} format={(n) => formatCurrency(n, locale)} duration={1.2} />
+              </p>
             </div>
             <div className="w-10 h-10 rounded-xl bg-success/15 flex items-center justify-center">
               <TrendingUp className="w-5 h-5 text-success" />
@@ -96,15 +142,15 @@ export function AdminDashboardView({ locale }: { locale: Locale }) {
           </div>
           <div className="space-y-2">
             <div className="flex justify-between text-xs">
-              <span className="text-muted-foreground">{locale === 'fr' ? 'MRR mensuel' : 'Monthly MRR'}</span>
+              <span className="text-muted-foreground">{t.admin.overview.monthlyMrr}</span>
               <span className="font-mono font-semibold">{formatCurrency(stats.mrr, locale)}</span>
             </div>
             <div className="flex justify-between text-xs">
-              <span className="text-muted-foreground">{locale === 'fr' ? 'Croissance' : 'Growth'}</span>
+              <span className="text-muted-foreground">{t.admin.overview.growth}</span>
               <span className="font-mono font-semibold text-success">+12% MoM</span>
             </div>
             <div className="flex justify-between text-xs">
-              <span className="text-muted-foreground">{locale === 'fr' ? 'Churn' : 'Churn'}</span>
+              <span className="text-muted-foreground">{t.admin.overview.churn}</span>
               <span className="font-mono font-semibold text-destructive">2.1%</span>
             </div>
           </div>
@@ -119,8 +165,8 @@ export function AdminDashboardView({ locale }: { locale: Locale }) {
         >
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-sm font-semibold">{locale === 'fr' ? 'Instances actives (7 jours)' : 'Active instances (7 days)'}</h3>
-              <p className="text-xs text-muted-foreground">{locale === 'fr' ? 'Cliniques connectées par jour' : 'Clinics connected per day'}</p>
+              <h3 className="text-sm font-semibold">{t.admin.overview.dailyActive}</h3>
+              <p className="text-xs text-muted-foreground">{t.admin.overview.dailyActiveSub}</p>
             </div>
             <Activity className="w-4 h-4 text-muted-foreground" />
           </div>
@@ -159,7 +205,7 @@ export function AdminDashboardView({ locale }: { locale: Locale }) {
           transition={{ delay: 300 }}
           className="glass-card rounded-2xl p-5"
         >
-          <h3 className="text-sm font-semibold mb-4">{locale === 'fr' ? 'Répartition par plan' : 'By plan'}</h3>
+          <h3 className="text-sm font-semibold mb-4">{t.admin.overview.byPlan}</h3>
           {planData.length > 0 && (
             <ResponsiveContainer width="100%" height={180}>
               <PieChart>
@@ -196,7 +242,7 @@ export function AdminDashboardView({ locale }: { locale: Locale }) {
           transition={{ delay: 350 }}
           className="glass-card rounded-2xl p-5"
         >
-          <h3 className="text-sm font-semibold mb-4">{locale === 'fr' ? 'Statut des licences' : 'License status'}</h3>
+          <h3 className="text-sm font-semibold mb-4">{t.admin.overview.byStatus}</h3>
           {statusData.length > 0 && (
             <ResponsiveContainer width="100%" height={180}>
               <PieChart>
@@ -233,7 +279,7 @@ export function AdminDashboardView({ locale }: { locale: Locale }) {
           transition={{ delay: 400 }}
           className="glass-card rounded-2xl p-5"
         >
-          <h3 className="text-sm font-semibold mb-4">{locale === 'fr' ? 'Télémétrie (7 jours)' : 'Telemetry (7 days)'}</h3>
+          <h3 className="text-sm font-semibold mb-4">{t.admin.overview.telemetry7d}</h3>
           <ResponsiveContainer width="100%" height={180}>
             <BarChart data={telemetryData} margin={{ top: 4, right: 4, left: -16, bottom: 0 }} layout="vertical">
               <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.5 0.02 250 / 0.15)" horizontal={false} />
@@ -263,13 +309,14 @@ export function AdminDashboardView({ locale }: { locale: Locale }) {
           transition={{ delay: 450 }}
           className="glass-card rounded-2xl p-5"
         >
-          <h3 className="text-sm font-semibold mb-3">{locale === 'fr' ? 'Instances récentes' : 'Recent instances'}</h3>
+          <h3 className="text-sm font-semibold mb-3">{t.admin.overview.recentInstances}</h3>
           <div className="space-y-2 max-h-[300px] overflow-y-auto scroll-area-glass">
-            {data.recentInstances.map((inst: any, i: number) => {
+            {data.recentInstances.map((inst: any) => {
               const isOnline = new Date(inst.lastSeenAt).getTime() > Date.now() - 24 * 60 * 60 * 1000
               return (
                 <div key={inst.id} className="flex items-center gap-3 p-2 rounded-lg glass-base">
-                  <div className={`w-2 h-2 rounded-full shrink-0 ${isOnline ? 'bg-success' : 'bg-muted-foreground'}`}>
+                  <div className="relative">
+                    <div className={`w-2 h-2 rounded-full shrink-0 ${isOnline ? 'bg-success' : 'bg-muted-foreground'}`} />
                     {isOnline && <span className="absolute inset-0 rounded-full bg-success animate-ping opacity-75" />}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -293,9 +340,9 @@ export function AdminDashboardView({ locale }: { locale: Locale }) {
           transition={{ delay: 500 }}
           className="glass-card rounded-2xl p-5"
         >
-          <h3 className="text-sm font-semibold mb-3">{locale === 'fr' ? 'Actions admin' : 'Admin actions'}</h3>
+          <h3 className="text-sm font-semibold mb-3">{t.admin.overview.recentActions}</h3>
           <div className="space-y-2 max-h-[300px] overflow-y-auto scroll-area-glass">
-            {data.recentActions.map((action: any, i: number) => (
+            {data.recentActions.map((action: any) => (
               <div key={action.id} className="flex items-center gap-3 p-2 rounded-lg glass-base">
                 <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
                   action.action.includes('revoke') || action.action.includes('block') ? 'bg-destructive/15 text-destructive' :
@@ -331,17 +378,17 @@ export function AdminDashboardView({ locale }: { locale: Locale }) {
         <Cpu className="w-4 h-4 text-success" />
         <div className="flex-1 flex items-center gap-4 text-xs">
           <span className="flex items-center gap-1">
-            <span className="status-pill text-success">Licensing Server</span>
+            <span className="status-pill text-success">{t.admin.overview.systemStatus}</span>
           </span>
           <span className="text-muted-foreground">·</span>
           <span className="flex items-center gap-1 text-muted-foreground">
             <Clock className="w-3 h-3" />
-            {locale === 'fr' ? 'Uptime: 99.97%' : 'Uptime: 99.97%'}
+            {t.admin.overview.uptime}: 99.97%
           </span>
           <span className="text-muted-foreground">·</span>
           <span className="flex items-center gap-1 text-muted-foreground">
             <Zap className="w-3 h-3" />
-            {stats.telemetryEvents24h} {locale === 'fr' ? 'événements 24h' : 'events 24h'}
+            <AnimatedNumber value={stats.telemetryEvents24h} /> {locale === 'fr' ? 'événements 24h' : 'events 24h'}
           </span>
         </div>
       </motion.div>
