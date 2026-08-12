@@ -1,6 +1,6 @@
 {
-  "name": "nextjs_tailwind_shadcn_ts",
-  "version": "0.2.1",
+  "name": "smart-clinic",
+  "version": "1.2.1",
   "private": true,
   "scripts": {
     "dev": "next dev -p 3000 2>&1 | tee dev.log",
@@ -10,12 +10,17 @@
     "db:push": "prisma db push --accept-data-loss",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
-    "db:reset": "prisma migrate reset"
+    "db:reset": "prisma migrate reset",
+    "electron:dev": "concurrently \"bun run dev\" \"wait-on http://localhost:3000 && tsc -p electron/tsconfig.json && electron electron/dist/main.js\"",
+    "electron:build": "next build && tsc -p electron/tsconfig.json && electron-builder",
+    "electron:package": "next build && tsc -p electron/tsconfig.json && electron-builder --publish never",
+    "electron:compile": "tsc -p electron/tsconfig.json"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
+    "@electric-sql/pglite": "^0.5.4",
     "@hookform/resolvers": "^5.1.1",
     "@mantine/charts": "^9.5.1",
     "@mantine/core": "^9.5.1",
@@ -65,9 +70,12 @@
     "cmdk": "^1.1.1",
     "date-fns": "^4.1.0",
     "dayjs": "^1.11.21",
+    "electron-store": "^11.0.2",
+    "electron-updater": "^6.8.9",
     "embla-carousel-react": "^8.6.0",
     "framer-motion": "^12.23.2",
     "input-otp": "^1.4.2",
+    "keytar": "^7.9.0",
     "lucide-react": "^0.525.0",
     "next": "^16.1.1",
     "next-auth": "^4.24.11",
@@ -97,10 +105,14 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "bun-types": "^1.3.4",
+    "concurrently": "^10.0.4",
+    "electron": "^43.4.0",
+    "electron-builder": "^26.15.3",
     "eslint": "^9",
     "eslint-config-next": "^16.1.1",
     "tailwindcss": "^4",
     "tw-animate-css": "^1.3.5",
-    "typescript": "^5"
+    "typescript": "^5",
+    "wait-on": "^9.1.0"
   }
 }

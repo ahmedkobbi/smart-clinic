@@ -1,0 +1,112 @@
+# Smart Clinic — Electron Builder Configuration
+# Per master prompt §8.3: deployable on local server/NUC
+# Per §6.3: signed container images, supply-chain integrity
+
+appId: com.smartclinic.app
+productName: Smart Clinic
+copyright: Copyright © 2026 Smart Clinic
+
+directories:
+  output: dist-electron
+  buildResources: electron/build
+
+# Files to include in the app
+files:
+  - electron/dist/**/*
+  - .next/standalone/**/*
+  - .next/static/**/*
+  - public/**/*
+  - package.json
+  - node_modules/**/*
+  - prisma/**/*
+  - .keys/ed25519-public.pem
+
+# Extra resources
+extraResources:
+  - from: .keys/ed25519-public.pem
+    to: ed25519-public.pem
+    filter: ["**/*"]
+
+# Code signing (configure via environment variables)
+# CSC_LINK = path to code signing certificate (P12/PFX)
+# CSC_KEY_PASSWORD = certificate password
+# APPLE_ID = Apple ID for notarization
+# APPLE_APP_SPECIFIC_PASSWORD = app-specific password
+# APPLE_TEAM_ID = Apple Developer team ID
+win:
+  target:
+    - nsis
+    - portable
+  icon: electron/build/icon.ico
+  signingHashAlgorithms: ['sha256']
+  publisherName: 'Smart Clinic'
+  # For EV cert: requires hardware token, configured via CSC_LINK
+
+nsis:
+  oneClick: false
+  perMachine: true
+  allowToChangeInstallationDirectory: true
+  installerIcon: electron/build/icon.ico
+  uninstallerIcon: electron/build/icon.ico
+  installerHeaderIcon: electron/build/icon.ico
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Smart Clinic
+
+mac:
+  target:
+    - dmg
+    - zip
+  icon: electron/build/icon.icns
+  category: public.app-category.medical
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: electron/build/entitlements.mac.plist
+  entitlementsInherit: electron/build/entitlements.mac.plist
+  # Notarization via APPLE_ID and APPLE_APP_SPECIFIC_PASSWORD env vars
+  notarize:
+    teamId: ${APPLE_TEAM_ID}
+
+dmg:
+  title: ${productName} ${version}
+  contents:
+    - x: 130
+      y: 220
+    - x: 410
+      y: 220
+      type: link
+      path: /Applications
+
+linux:
+  target:
+    - AppImage
+    - deb
+    - rpm
+  icon: electron/build/icon.png
+  category: Office
+  maintainer: Smart Clinic
+  desktop:
+    MimeType: x-scheme-handler/smartclinic
+
+# Auto-update configuration
+publish:
+  provider: generic
+  url: https://releases.smartclinic.app/${os}
+  # In production, use a real update server:
+  # provider: s3
+  # bucket: smartclinic-releases
+  # region: eu-west-3
+
+# After-install hooks
+afterSign: electron/build/notarize.js
+
+# Release info
+releaseInfo:
+  releaseNotes: |
+    Smart Clinic Desktop Edition
+    
+    Enterprise Clinical Practice Management Platform
+    - Offline-first with PGlite embedded database
+    - Ed25519 license verification
+    - Auto-updates with rollback safety
+    - RGPD · HDS · ISO 27001 (cible)

@@ -65,3 +65,10 @@ server.log
 /Caddyfile
 /bun.lock
 .keys/
+
+# Electron
+electron/dist/
+dist-electron/
+electron/build/*.ico
+electron/build/*.icns
+electron/build/*.png
