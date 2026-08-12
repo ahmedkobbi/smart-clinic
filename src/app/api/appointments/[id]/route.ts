@@ -49,6 +49,41 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       payload: { from: appt.status, to: parsed.status, patient: appt.patientId },
     })
 
+    // Waitlist auto-backfill (§13.2: smart overbooking)
+    // When an appointment is cancelled, check waitlist for patients who
+    // could fill the slot, sorted by priority
+    if (parsed.status === 'cancelled') {
+      const waitlistEntries = await db.waitlistEntry.findMany({
+        where: {
+          tenantId: appt.tenantId,
+          status: 'waiting',
+          patientId: { not: appt.patientId },
+        },
+        include: { patient: true },
+        orderBy: { priority: 'asc' },
+        take: 3,
+      })
+
+      // Notify top waitlist entries (simulate SMS/WhatsApp)
+      for (const entry of waitlistEntries) {
+        await db.waitlistEntry.update({
+          where: { id: entry.id },
+          data: { status: 'notified', notifiedAt: new Date() },
+        })
+        // In production: send SMS/WhatsApp via Twilio/WhatsApp Business API
+        // For now: create a timeline event
+        await db.timelineEvent.create({
+          data: {
+            patientId: entry.patientId,
+            type: 'note',
+            title: 'Notification liste d\'attente',
+            description: `Créneau libéré — ${appt.startAt.toISOString()}`,
+            occurredAt: new Date(),
+          },
+        })
+      }
+    }
+
     // Add timeline event for significant transitions
     if (parsed.status === 'completed') {
       await db.timelineEvent.create({

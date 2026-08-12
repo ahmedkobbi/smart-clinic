@@ -1,0 +1,27 @@
+# Smart Clinic On-Premise Caddyfile
+# Automatic HTTPS with Let's Encrypt
+
+{$DOMAIN:localhost} {
+    reverse_proxy app:3000
+
+    # Security headers
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Permissions-Policy "camera=(), microphone=(), geolocation=()"
+    }
+
+    # Compression
+    encode gzip zstd
+
+    # Logging
+    log {
+        output file /data/access.log {
+            roll_size 100mb
+            roll_keep 10
+        }
+    }
+}

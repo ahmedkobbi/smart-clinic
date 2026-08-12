@@ -6,7 +6,6 @@ import { useApp } from '@/lib/store'
 import { Sidebar } from '@/components/layout/sidebar'
 import { TopBar } from '@/components/layout/topbar'
 import { FloatingDock } from '@/components/layout/floating-dock'
-import { CommandPalette } from '@/components/layout/command-palette'
 import { MobileNav } from '@/components/layout/mobile-nav'
 import { DashboardView } from '@/components/views/dashboard-view'
 import { PatientsView } from '@/components/views/patients-view'
@@ -115,7 +114,6 @@ function AppShell() {
             </AnimatePresence>
           </main>
         </div>
-        <CommandPalette locale={locale} />
       </div>
     )
   }
@@ -166,7 +164,6 @@ function AppShell() {
       </div>
 
       <FloatingDock locale={locale} />
-      <CommandPalette locale={locale} />
     </div>
   )
 }

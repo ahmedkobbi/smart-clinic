@@ -498,6 +498,23 @@
     background: linear-gradient(90deg, transparent, var(--border), transparent);
   }
 
+  /* Adaptive glass intensity — responds to ambient light (§7.2) */
+  .glass-intensity-dark {
+    --glass-base-blur: 20px;
+    --glass-raised-blur: 32px;
+    --glass-floating-blur: 48px;
+  }
+  .glass-intensity-dim {
+    --glass-base-blur: 16px;
+    --glass-raised-blur: 26px;
+    --glass-floating-blur: 40px;
+  }
+  .glass-intensity-bright {
+    --glass-base-blur: 8px;
+    --glass-raised-blur: 16px;
+    --glass-floating-blur: 28px;
+  }
+
   /* Glow effect for AI elements */
   .ai-glow {
     position: relative;
