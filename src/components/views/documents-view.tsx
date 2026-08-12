@@ -1,7 +1,7 @@
 'use client'
 
 import { useApp } from '@/lib/store'
-import { getDict, formatDate, formatDateTime, type Locale } from '@/lib/i18n'
+import { getDict, formatDate, type Locale } from '@/lib/i18n'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
@@ -9,16 +9,13 @@ import {
   File, Loader2, Download, Trash2, Filter,
 } from 'lucide-react'
 import { useState, useRef } from 'react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select'
-import { ScrollArea } from '@/components/ui/scroll-area'
+  Button, TextInput, Badge, Select, ScrollArea, Group, Modal,
+  Stack, FileInput,
+} from '@mantine/core'
 import { EmptyState } from '@/components/common/empty-state'
 import { SkeletonList } from '@/components/common/skeleton'
-import { toast } from 'sonner'
+import { notifications } from '@mantine/notifications'
 
 const CATEGORY_CONFIG = {
   lab_report: { icon: FileSpreadsheet, color: 'text-info bg-info/10', label: { fr: 'Résultat labo', en: 'Lab report' } },
@@ -67,32 +64,30 @@ export function DocumentsView({ locale }: { locale: Locale }) {
   return (
     <div className="p-4 md:p-6 space-y-4 pb-24">
       {/* Filters */}
-      <div className="flex flex-col md:flex-row gap-3 items-stretch">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={t.documents.searchPlaceholder}
-            className="pl-10 glass-base border-0 h-11"
-          />
-        </div>
-        <Select value={category} onValueChange={setCategory}>
-          <SelectTrigger className="w-full md:w-48 glass-base border-0 h-11">
-            <Filter className="w-3.5 h-3.5 mr-2" />
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent className="glass-floating">
-            <SelectItem value="all">{t.common.allCategories}</SelectItem>
-            {Object.entries(CATEGORY_CONFIG).map(([k, v]) => (
-              <SelectItem key={k} value={k}>{v.label[locale as 'fr' | 'en']}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Button onClick={() => setUploadOpen(true)} className="bg-primary text-primary-foreground h-11">
-          <Upload className="w-4 h-4" /> {t.documents.upload}
+      <Group gap="sm" align="stretch" className="flex flex-col md:flex-row">
+        <TextInput
+          leftSection={<Search className="w-4 h-4" />}
+          placeholder={t.documents.searchPlaceholder}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          variant="filled"
+          className="flex-1"
+        />
+        <Select
+          value={category}
+          onChange={(v) => setCategory(v || 'all')}
+          data={[
+            { value: 'all', label: t.common.allCategories },
+            ...Object.entries(CATEGORY_CONFIG).map(([k, v]) => ({ value: k, label: v.label[locale as 'fr' | 'en'] })),
+          ]}
+          variant="filled"
+          w={{ base: '100%', md: 220 }}
+          leftSection={<Filter className="w-3.5 h-3.5" />}
+        />
+        <Button onClick={() => setUploadOpen(true)} leftSection={<Upload className="w-4 h-4" />}>
+          {t.documents.upload}
         </Button>
-      </div>
+      </Group>
 
       {/* Document grid */}
       {isLoading ? (
@@ -131,7 +126,7 @@ export function DocumentsView({ locale }: { locale: Locale }) {
                     </div>
                   </div>
                   <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-3">
-                    <Badge variant="outline" className="text-[9px]">{config.label[locale as 'fr' | 'en']}</Badge>
+                    <Badge variant="outline" size="sm">{config.label[locale as 'fr' | 'en']}</Badge>
                     <span>{formatDate(doc.uploadedAt, locale)}</span>
                   </div>
                   {doc.description && (
@@ -175,21 +170,14 @@ function UploadDialog({ open, onOpenChange, locale, patients, onSuccess }: any) 
   const [description, setDescription] = useState('')
   const [file, setFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
-
-  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0]
-    if (f) setFile(f)
-  }
 
   const handleUpload = async () => {
     if (!patientId || !file) {
-      toast.error(t.documents.patientFileRequiredToast)
+      notifications.show({ message: t.documents.patientFileRequiredToast, color: 'red' })
       return
     }
     setUploading(true)
     try {
-      // Read file as base64
       const reader = new FileReader()
       reader.onload = async () => {
         const base64 = (reader.result as string).split(',')[1]
@@ -208,90 +196,67 @@ function UploadDialog({ open, onOpenChange, locale, patients, onSuccess }: any) 
           }),
         })
         if (!res.ok) throw new Error('Upload failed')
-        toast.success(t.documents.uploadedToast)
+        notifications.show({ message: t.documents.uploadedToast, color: 'green' })
         onSuccess()
         onOpenChange(false)
         setFile(null)
         setDescription('')
-        if (fileInputRef.current) fileInputRef.current.value = ''
       }
       reader.readAsDataURL(file)
     } catch (e) {
-      toast.error((e as Error).message)
+      notifications.show({ message: (e as Error).message, color: 'red' })
       setUploading(false)
     }
   }
 
   return (
-    <motion.div className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${open ? '' : 'hidden'}`}>
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => onOpenChange(false)} />
-      <motion.div
-        initial={{ scale: 0.95, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        className="glass-floating rounded-2xl w-full max-w-md p-6 relative z-10"
-      >
-        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+    <Modal
+      opened={open}
+      onClose={() => onOpenChange(false)}
+      title={
+        <Group gap="sm">
           <Upload className="w-5 h-5 text-primary" />
-          {t.documents.uploadTitle}
-        </h3>
-        <div className="space-y-3">
-          <div>
-            <label className="text-xs font-medium text-muted-foreground">{t.billing.patient}</label>
-            <select
-              value={patientId}
-              onChange={(e) => setPatientId(e.target.value)}
-              className="w-full mt-1 h-10 px-3 rounded-md glass-base border-0 text-sm"
-            >
-              <option value="">—</option>
-              {patients.map((p: any) => (
-                <option key={p.id} value={p.id}>{p.firstName} {p.lastName}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="text-xs font-medium text-muted-foreground">{t.documents.category}</label>
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="w-full mt-1 h-10 px-3 rounded-md glass-base border-0 text-sm"
-            >
-              {Object.entries(CATEGORY_CONFIG).map(([k, v]) => (
-                <option key={k} value={k}>{v.label[locale as 'fr' | 'en']}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="text-xs font-medium text-muted-foreground">{t.documents.file}</label>
-            <input
-              ref={fileInputRef}
-              type="file"
-              onChange={handleFile}
-              className="w-full mt-1 text-sm"
-            />
-            {file && (
-              <p className="text-[11px] text-muted-foreground mt-1">
-                {file.name} ({(file.size / 1024).toFixed(0)} KB)
-              </p>
-            )}
-          </div>
-          <div>
-            <label className="text-xs font-medium text-muted-foreground">{t.documents.description}</label>
-            <Input
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="glass-base border-0 mt-1"
-              placeholder="..."
-            />
-          </div>
-        </div>
-        <div className="flex gap-2 mt-4 justify-end">
+          <span>{t.documents.uploadTitle}</span>
+        </Group>
+      }
+    >
+      <Stack gap="sm">
+        <Select
+          label={t.billing.patient}
+          variant="filled"
+          value={patientId}
+          onChange={(v) => setPatientId(v || '')}
+          data={patients.map((p: any) => ({ value: p.id, label: `${p.firstName} ${p.lastName}` }))}
+          placeholder="—"
+          searchable
+        />
+        <Select
+          label={t.documents.category}
+          variant="filled"
+          value={category}
+          onChange={(v) => setCategory(v || 'lab_report')}
+          data={Object.entries(CATEGORY_CONFIG).map(([k, v]) => ({ value: k, label: v.label[locale as 'fr' | 'en'] }))}
+        />
+        <FileInput
+          label={t.documents.file}
+          placeholder={t.documents.file}
+          value={file}
+          onChange={(f) => setFile(f)}
+        />
+        <TextInput
+          label={t.documents.description}
+          variant="filled"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="..."
+        />
+        <Group justify="flex-end" mt="sm">
           <Button variant="outline" onClick={() => onOpenChange(false)}>{t.common.cancel}</Button>
-          <Button onClick={handleUpload} disabled={uploading || !file || !patientId}>
-            {uploading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+          <Button onClick={handleUpload} disabled={uploading || !file || !patientId} loading={uploading}>
             {t.documents.upload}
           </Button>
-        </div>
-      </motion.div>
-    </motion.div>
+        </Group>
+      </Stack>
+    </Modal>
   )
 }

@@ -2,8 +2,7 @@
 
 import { useApp } from '@/lib/store'
 import { getDict, otherLocale, type Locale } from '@/lib/i18n'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
+import { Modal, TextInput } from '@mantine/core'
 import { useEffect, useState, useMemo } from 'react'
 import {
   LayoutDashboard, Users, CalendarClock, FileText, Receipt,
@@ -12,7 +11,7 @@ import {
   Hash, Calendar, Sparkles, Loader2, FolderOpen, FlaskConical, Video, IdCard, Leaf, Stethoscope,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { toast } from 'sonner'
+import { notifications } from '@mantine/notifications'
 
 interface CommandItem {
   id: string
@@ -164,7 +163,7 @@ export function CommandPalette({ locale }: { locale: Locale }) {
       const data = await res.json()
       if (data.executionResult?.success) {
         if (data.executionResult.type === 'appointment_created') {
-          toast.success(data.executionResult.message)
+            notifications.show({ message: data.executionResult.message, color: 'green' })
           setCommandOpen(false)
           setQuery('')
         } else if (data.executionResult.type === 'navigate') {
@@ -173,10 +172,10 @@ export function CommandPalette({ locale }: { locale: Locale }) {
           setQuery('')
         }
       } else {
-        toast.info(t.command.commandParsedToast)
+        notifications.show({ message: t.command.commandParsedToast, color: 'blue' })
       }
     } catch (e) {
-      toast.error((e as Error).message)
+      notifications.show({ message: (e as Error).message, color: 'red' })
     } finally {
       setNlExecuting(false)
     }
@@ -200,22 +199,27 @@ export function CommandPalette({ locale }: { locale: Locale }) {
   }
 
   return (
-    <Dialog open={commandOpen} onOpenChange={(o) => { setCommandOpen(o); if (!o) setQuery('') }}>
-      <DialogContent className="glass-floating p-0 max-w-2xl gap-0 overflow-hidden rounded-2xl">
-        <DialogHeader className="sr-only">
-          <DialogTitle>{t.nav.command}</DialogTitle>
-        </DialogHeader>
-        <div className="flex items-center gap-3 px-4 py-3 border-b border-border/40">
-          <Search className={`w-4 h-4 text-muted-foreground ${searching ? 'animate-pulse' : ''}`} />
-          <Input
-            autoFocus
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={t.command.placeholder}
-            className="border-0 bg-transparent px-0 py-0 h-auto focus-visible:ring-0 text-base shadow-none"
-          />
-          <kbd className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-muted border border-border">ESC</kbd>
-        </div>
+    <Modal
+      opened={commandOpen}
+      onClose={() => { setCommandOpen(false); setQuery('') }}
+      withCloseButton={false}
+      padding={0}
+      radius="lg"
+      classNames={{ body: 'p-0' }}
+      className="glass-floating"
+    >
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-border/40">
+        <Search className={`w-4 h-4 text-muted-foreground ${searching ? 'animate-pulse' : ''}`} />
+        <TextInput
+          autoFocus
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder={t.command.placeholder}
+          variant="unstyled"
+          className="flex-1 text-base"
+        />
+        <kbd className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-muted border border-border">ESC</kbd>
+      </div>
 
         <div className="max-h-[60vh] overflow-y-auto scroll-area-glass p-2">
           {/* NL command execution */}
@@ -296,7 +300,6 @@ export function CommandPalette({ locale }: { locale: Locale }) {
           <span>{t.command.hint}</span>
           <span className="font-mono">↵ {t.common.confirm}</span>
         </div>
-      </DialogContent>
-    </Dialog>
+    </Modal>
   )
 }

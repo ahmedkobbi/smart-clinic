@@ -8,7 +8,7 @@ import {
   Leaf, TreePine, Droplet, Car, Smartphone, FileText, Pill, Receipt,
   TrendingDown,
 } from 'lucide-react'
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
+import { BarChart } from '@mantine/charts'
 import { SkeletonCard } from '@/components/common/skeleton'
 
 async function fetchSustainability() {
@@ -111,23 +111,34 @@ export function SustainabilityView({ locale }: { locale: Locale }) {
             <p className="text-xs text-muted-foreground">{t.sustainability.sheetsPerMonth}</p>
           </div>
         </div>
-        <ResponsiveContainer width="100%" height={240}>
-          <BarChart data={data.monthlyData} margin={{ top: 4, right: 4, left: -16, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.5 0.02 250 / 0.15)" vertical={false} />
-            <XAxis dataKey="month" tick={{ fontSize: 11 }} stroke="oklch(0.5 0.02 250 / 0.6)" />
-            <YAxis tick={{ fontSize: 11 }} stroke="oklch(0.5 0.02 250 / 0.6)" />
-            <Tooltip
-              contentStyle={{
-                background: 'var(--glass-floating-bg)',
-                backdropFilter: 'blur(20px)',
-                border: '1px solid var(--glass-floating-border)',
-                borderRadius: 12,
-                fontSize: 12,
-              }}
-            />
-            <Bar dataKey="sheets" fill="var(--success)" radius={[6, 6, 0, 0]} name={t.sustainability.sheets} />
-          </BarChart>
-        </ResponsiveContainer>
+        <BarChart
+          h={240}
+          data={data.monthlyData}
+          dataKey="month"
+          series={[{ name: 'sheets', color: 'var(--success)' }]}
+          xAxisProps={{ tick: { fontSize: 11 } }}
+          yAxisProps={{ tick: { fontSize: 11 } }}
+          gridProps={{ strokeDasharray: '3 3', vertical: false }}
+          barChartProps={{ barCategoryGap: '20%' }}
+          tooltipProps={{
+            content: ({ label, payload }: any) =>
+              payload && payload.length > 0 ? (
+                <div
+                  style={{
+                    background: 'var(--glass-floating-bg)',
+                    backdropFilter: 'blur(20px)',
+                    border: '1px solid var(--glass-floating-border)',
+                    borderRadius: 12,
+                    fontSize: 12,
+                    padding: 8,
+                  }}
+                >
+                  <p style={{ fontWeight: 500 }}>{label}</p>
+                  <p style={{ color: 'var(--success)' }}>{t.sustainability.sheets}: {payload[0]?.value}</p>
+                </div>
+              ) : null,
+          }}
+        />
       </motion.div>
 
       {/* Breakdown + equivalences */}

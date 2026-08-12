@@ -9,13 +9,12 @@ import {
   CheckCircle2, LogIn, Play, XCircle, UserCheck,
 } from 'lucide-react'
 import { useState, useMemo } from 'react'
-import { Button } from '@/components/ui/button'
+import { Button, ActionIcon, ScrollArea } from '@mantine/core'
 import { StatusPill, appointmentStatusVariant, noShowRiskVariant } from '@/components/common/status-pill'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { EmptyState } from '@/components/common/empty-state'
 import { SkeletonList } from '@/components/common/skeleton'
 import { AppointmentForm } from './appointment-form'
-import { toast } from 'sonner'
+import { notifications } from '@mantine/notifications'
 
 interface ApptResponse { items: any[] }
 
@@ -99,15 +98,15 @@ export function AppointmentsView({ locale }: { locale: Locale }) {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center gap-3 justify-between">
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" onClick={() => navigate(-1)}>
+          <ActionIcon variant="outline" onClick={() => navigate(-1)}>
             <ChevronLeft className="w-4 h-4" />
-          </Button>
+          </ActionIcon>
           <Button variant="outline" size="sm" onClick={goToday}>
             {t.appointments.today}
           </Button>
-          <Button variant="outline" size="icon" onClick={() => navigate(1)}>
+          <ActionIcon variant="outline" onClick={() => navigate(1)}>
             <ChevronRight className="w-4 h-4" />
-          </Button>
+          </ActionIcon>
           <div className="ml-2">
             <p className="text-sm font-semibold capitalize">
               {viewMode === 'day'
@@ -132,8 +131,8 @@ export function AppointmentsView({ locale }: { locale: Locale }) {
               {t.appointments.week}
             </button>
           </div>
-          <Button onClick={() => setNewAppointmentOpen(true)} className="bg-primary text-primary-foreground h-9">
-            <Plus className="w-4 h-4" /> {t.appointments.new}
+          <Button onClick={() => setNewAppointmentOpen(true)} leftSection={<Plus className="w-4 h-4" />}>
+            {t.appointments.new}
           </Button>
         </div>
       </div>
@@ -196,7 +195,7 @@ function DayView({ date, appts, isLoading, locale, t, onPatientClick }: any) {
         <div className="col-span-3 md:col-span-1">{t.common.status}</div>
       </div>
 
-      <ScrollArea className="h-[60vh]">
+      <ScrollArea h="60vh">
         {isLoading ? (
           <SkeletonList rows={8} />
         ) : (
@@ -234,7 +233,7 @@ function WeekView({ weekDays, apptsByDay, isLoading, locale, t, onPatientClick }
 
   return (
     <div className="glass-card rounded-2xl overflow-hidden">
-      <ScrollArea className="h-[60vh]">
+      <ScrollArea h="60vh">
         {isLoading ? (
           <div className="p-4"><SkeletonList rows={6} /></div>
         ) : (
@@ -300,10 +299,10 @@ function ApptRow({ appt, locale, t, onPatientClick, onStatusChange }: any) {
         const err = await res.json()
         throw new Error(err.error || 'Failed')
       }
-      toast.success(`${t.common.status} → ${t.appointments.status[newStatus as keyof typeof t.appointments.status]}`)
+      notifications.show({ message: `${t.common.status} → ${t.appointments.status[newStatus as keyof typeof t.appointments.status]}`, color: 'green' })
       onStatusChange()
     } catch (e) {
-      toast.error((e as Error).message)
+      notifications.show({ message: (e as Error).message, color: 'red' })
     } finally {
       setUpdating(false)
     }

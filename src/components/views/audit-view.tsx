@@ -10,18 +10,11 @@ import {
   CheckCircle2, XCircle, Loader2,
 } from 'lucide-react'
 import { useState } from 'react'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { ScrollArea } from '@/components/ui/scroll-area'
+import { TextInput, Button, Badge, Select, Tabs, ScrollArea, Group } from '@mantine/core'
 import { EmptyState } from '@/components/common/empty-state'
 import { SkeletonList } from '@/components/common/skeleton'
 import { ConsentManager } from './consent-manager'
-import { toast } from 'sonner'
+import { notifications } from '@mantine/notifications'
 
 interface AuditResponse { items: any[]; total: number }
 interface ChainVerify { valid: boolean; checked: number; brokenAt?: string }
@@ -83,12 +76,12 @@ export function AuditView({ locale }: { locale: Locale }) {
       const result = await verifyChain()
       setVerifyResult(result)
       if (result.valid) {
-        toast.success(t.audit.chainValidToast.replace('{n}', String(result.checked)))
+      notifications.show({ message: t.audit.chainValidToast.replace('{n}', String(result.checked)), color: 'green' })
       } else {
-        toast.error(t.audit.chainBrokenToast.replace('{n}', String(result.checked)))
+        notifications.show({ message: t.audit.chainBrokenToast.replace('{n}', String(result.checked)), color: 'red' })
       }
     } catch (e) {
-      toast.error((e as Error).message)
+      notifications.show({ message: (e as Error).message, color: 'red' })
     } finally {
       setVerifying(false)
     }
@@ -109,18 +102,22 @@ export function AuditView({ locale }: { locale: Locale }) {
   return (
     <div className="p-4 md:p-6 space-y-4 pb-24">
       <Tabs defaultValue="log">
-        <TabsList className="glass-base">
-          <TabsTrigger value="log">
-            <Link2 className="w-3.5 h-3.5 mr-1.5" />
-            {t.audit.log}
-          </TabsTrigger>
-          <TabsTrigger value="consent">
-            <ShieldCheck className="w-3.5 h-3.5 mr-1.5" />
-            {t.audit.consent}
-          </TabsTrigger>
-        </TabsList>
+        <Tabs.List className="glass-base">
+          <Tabs.Tab value="log">
+            <Group gap={6}>
+              <Link2 className="w-3.5 h-3.5" />
+              <span>{t.audit.log}</span>
+            </Group>
+          </Tabs.Tab>
+          <Tabs.Tab value="consent">
+            <Group gap={6}>
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>{t.audit.consent}</span>
+            </Group>
+          </Tabs.Tab>
+        </Tabs.List>
 
-        <TabsContent value="log" className="space-y-4 mt-4">
+        <Tabs.Panel value="log" className="space-y-4 mt-4">
           {/* Hash chain status banner */}
           <motion.div
             initial={{ y: 8, opacity: 0 }}
@@ -135,7 +132,7 @@ export function AuditView({ locale }: { locale: Locale }) {
                 <div>
                   <h3 className="text-sm font-semibold flex items-center gap-2">
                     {t.audit.hashChain}
-                    <Badge variant="outline" className="text-[10px] font-mono">SHA-256</Badge>
+                    <Badge variant="outline" size="sm" className="font-mono">SHA-256</Badge>
                   </h3>
                   <p className="text-xs text-muted-foreground mt-0.5">
                     {verifyResult === null
@@ -146,8 +143,7 @@ export function AuditView({ locale }: { locale: Locale }) {
                   </p>
                 </div>
               </div>
-              <Button onClick={handleVerify} disabled={verifying} className="bg-primary text-primary-foreground">
-                {verifying ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
+              <Button onClick={handleVerify} disabled={verifying} loading={verifying} leftSection={verifying ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}>
                 {verifying ? t.common.loading : t.audit.verifyChain}
               </Button>
             </div>
@@ -188,39 +184,36 @@ export function AuditView({ locale }: { locale: Locale }) {
           </motion.div>
 
           {/* Filters */}
-          <div className="flex flex-col md:flex-row gap-3 items-stretch">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder={t.audit.searchPlaceholder}
-                className="pl-10 glass-base border-0 h-11"
-              />
-            </div>
-            <Select value={action} onValueChange={setAction}>
-              <SelectTrigger className="w-full md:w-44 glass-base border-0">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="glass-floating">
-                <SelectItem value="all">{t.common.allActions}</SelectItem>
-                {Object.entries(t.audit.actions).map(([k, v]) => (
-                  <SelectItem key={k} value={k}>{v}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={entity} onValueChange={setEntity}>
-              <SelectTrigger className="w-full md:w-44 glass-base border-0">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="glass-floating">
-                <SelectItem value="all">{t.common.allEntities}</SelectItem>
-                {Object.entries(t.audit.entities).map(([k, v]) => (
-                  <SelectItem key={k} value={k}>{v}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <Group gap="sm" align="stretch" className="flex flex-col md:flex-row">
+            <TextInput
+              leftSection={<Search className="w-4 h-4" />}
+              placeholder={t.audit.searchPlaceholder}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              variant="filled"
+              className="flex-1"
+            />
+            <Select
+              value={action}
+              onChange={(v) => setAction(v || 'all')}
+              data={[
+                { value: 'all', label: t.common.allActions },
+                ...Object.entries(t.audit.actions).map(([k, v]) => ({ value: k, label: v as string })),
+              ]}
+              variant="filled"
+              w={{ base: '100%', md: 180 }}
+            />
+            <Select
+              value={entity}
+              onChange={(v) => setEntity(v || 'all')}
+              data={[
+                { value: 'all', label: t.common.allEntities },
+                ...Object.entries(t.audit.entities).map(([k, v]) => ({ value: k, label: v as string })),
+              ]}
+              variant="filled"
+              w={{ base: '100%', md: 180 }}
+            />
+          </Group>
 
           {/* Audit log entries */}
           <div className="glass-card rounded-2xl overflow-hidden">
@@ -232,7 +225,7 @@ export function AuditView({ locale }: { locale: Locale }) {
               <div className="col-span-2 hidden md:block">Hash</div>
               <div className="col-span-2 md:col-span-1 text-right">IP</div>
             </div>
-            <ScrollArea className="h-[55vh]">
+            <ScrollArea h="55vh">
               {isLoading ? (
                 <SkeletonList rows={8} />
               ) : filtered.length === 0 ? (
@@ -266,12 +259,12 @@ export function AuditView({ locale }: { locale: Locale }) {
                       <div className="col-span-4 md:col-span-3 flex items-center gap-1.5">
                         <span className="text-xs">{t.audit.entities[log.entity as keyof typeof t.audit.entities] || log.entity}</span>
                         {log.entityId && (
-                          <Badge variant="outline" className="text-[9px] font-mono truncate max-w-32">
+                          <Badge variant="outline" size="sm" className="font-mono truncate max-w-32">
                             {log.entityId.slice(-8)}
                           </Badge>
                         )}
                         {log.reason && (
-                          <Badge variant="destructive" className="text-[9px]">
+                          <Badge color="red" variant="filled" size="sm">
                             {t.audit.breakGlassBadge}
                           </Badge>
                         )}
@@ -300,11 +293,11 @@ export function AuditView({ locale }: { locale: Locale }) {
             <ShieldAlert className="w-3.5 h-3.5 inline mr-1.5 text-warning" />
             {t.audit.tamperEvidentDesc}
           </div>
-        </TabsContent>
+        </Tabs.Panel>
 
-        <TabsContent value="consent" className="mt-4">
+        <Tabs.Panel value="consent" className="mt-4">
           <ConsentManager locale={locale} />
-        </TabsContent>
+        </Tabs.Panel>
       </Tabs>
     </div>
   )

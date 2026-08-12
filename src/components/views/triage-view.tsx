@@ -8,12 +8,9 @@ import {
   Stethoscope, Send, Loader2, AlertTriangle, Clock, CheckCircle2,
   Activity, Sparkles,
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { Button, TextInput, Textarea, Grid, Stack } from '@mantine/core'
 import { EmptyState } from '@/components/common/empty-state'
-import { toast } from 'sonner'
+import { notifications } from '@mantine/notifications'
 
 interface TriageResult {
   urgencyLevel: 'emergency' | 'urgent' | 'scheduled' | 'routine'
@@ -71,7 +68,7 @@ export function TriageView({ locale }: { locale: Locale }) {
 
   const handleTriage = async () => {
     if (!symptoms.trim()) {
-      toast.error(t.triage.describeSymptomsToast)
+      notifications.show({ message: t.triage.describeSymptomsToast, color: 'red' })
       return
     }
     setLoading(true)
@@ -94,7 +91,7 @@ export function TriageView({ locale }: { locale: Locale }) {
       const data = await res.json()
       setResult(data)
     } catch (e) {
-      toast.error((e as Error).message)
+      notifications.show({ message: (e as Error).message, color: 'red' })
     } finally {
       setLoading(false)
     }
@@ -134,38 +131,39 @@ export function TriageView({ locale }: { locale: Locale }) {
           transition={{ delay: 50 }}
           className="glass-card rounded-2xl p-5 space-y-4"
         >
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label>{t.patients.age}</Label>
-              <Input
+          <Grid gap="sm">
+            <Grid.Col span={{ base: 12, sm: 6 }}>
+              <TextInput
                 type="number"
+                label={t.patients.age}
+                variant="filled"
                 value={age}
                 onChange={(e) => setAge(e.target.value)}
                 placeholder="—"
-                className="glass-base border-0"
               />
-            </div>
-            <div className="space-y-1.5">
-              <Label>{t.patients.sex}</Label>
-              <Input
+            </Grid.Col>
+            <Grid.Col span={{ base: 12, sm: 6 }}>
+              <TextInput
+                label={t.patients.sex}
+                variant="filled"
                 value={sex}
                 onChange={(e) => setSex(e.target.value)}
                 placeholder="M / F / —"
-                className="glass-base border-0"
               />
-            </div>
-          </div>
+            </Grid.Col>
+          </Grid>
 
-          <div className="space-y-1.5">
-            <Label>{t.triage.symptoms}</Label>
+          <Stack gap="xs">
             <Textarea
-              rows={5}
+              label={t.triage.symptoms}
+              variant="filled"
+              autosize
+              minRows={5}
               value={symptoms}
               onChange={(e) => setSymptoms(e.target.value)}
               placeholder={t.triage.symptomsPlaceholder}
-              className="glass-base border-0 resize-none"
             />
-          </div>
+          </Stack>
 
           {/* Suggested symptoms */}
           <div>
@@ -188,19 +186,12 @@ export function TriageView({ locale }: { locale: Locale }) {
           <Button
             onClick={handleTriage}
             disabled={loading || !symptoms.trim()}
-            className="w-full bg-primary text-primary-foreground hover:opacity-90 h-11"
+            loading={loading}
+            fullWidth
+            size="lg"
+            leftSection={loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
           >
-            {loading ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                {t.triage.analyzing}
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4 mr-2" />
-                {t.triage.run}
-              </>
-            )}
+            {loading ? t.triage.analyzing : t.triage.run}
           </Button>
         </motion.div>
 
@@ -316,7 +307,7 @@ function TriageResultDisplay({ result, locale, onBookAppointment }: { result: Tr
         {result.urgencyLevel !== 'emergency' && (
           <Button
             onClick={onBookAppointment}
-            className="w-full bg-primary text-primary-foreground hover:opacity-90"
+            fullWidth
           >
             {t.triage.bookAppointment}
           </Button>

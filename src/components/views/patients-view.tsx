@@ -6,32 +6,21 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Search, Plus, Phone, Mail, MapPin, Droplet, Activity, Calendar,
-  Pill, Receipt, FileText, AlertTriangle, ShieldCheck, ChevronRight,
-  Heart, Weight, Ruler, Thermometer, Lock, X, Sparkles, FileDown,
+  Pill, Receipt, FileText, AlertTriangle, ShieldCheck,
+  Heart, Weight, Ruler, Lock, Sparkles, FileDown,
 } from 'lucide-react'
-import { useState, useMemo } from 'react'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { ScrollArea } from '@/components/ui/scroll-area'
+import { useState } from 'react'
 import {
-  Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
-} from '@/components/ui/sheet'
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
-} from '@/components/ui/dialog'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select'
+  Button, Badge, ScrollArea, Drawer, Modal, TextInput, Textarea,
+  Select, Group, Stack, Grid,
+} from '@mantine/core'
 import { StatusPill, invoiceStatusVariant } from '@/components/common/status-pill'
 import { EmptyState } from '@/components/common/empty-state'
 import { SkeletonList } from '@/components/common/skeleton'
 import { VitalsChart } from '@/components/common/vitals-chart'
 import { PatientForm } from './patient-form'
 import { PrescriptionForm } from './prescription-form'
-import { toast } from 'sonner'
+import { notifications } from '@mantine/notifications'
 
 interface PatientList {
   items: any[]
@@ -70,20 +59,19 @@ export function PatientsView({ locale }: { locale: Locale }) {
   return (
     <div className="p-4 md:p-6 space-y-4 pb-24">
       {/* Search bar */}
-      <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={t.patients.search}
-            className="pl-10 glass-base border-0 h-11"
-          />
-        </div>
-        <Button onClick={() => setNewPatientOpen(true)} className="bg-primary text-primary-foreground hover:opacity-90 h-11">
-          <Plus className="w-4 h-4" /> {t.patients.new}
+      <Group gap="sm" align="stretch" className="flex flex-col md:flex-row md:items-center">
+        <TextInput
+          leftSection={<Search className="w-4 h-4" />}
+          placeholder={t.patients.search}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          variant="filled"
+          className="flex-1"
+        />
+        <Button onClick={() => setNewPatientOpen(true)} leftSection={<Plus className="w-4 h-4" />}>
+          {t.patients.new}
         </Button>
-      </div>
+      </Group>
 
       {/* Patient list */}
       <div className="glass-card rounded-2xl overflow-hidden">
@@ -139,7 +127,7 @@ export function PatientsView({ locale }: { locale: Locale }) {
                   <div className="col-span-4 md:col-span-3 flex items-center gap-1 flex-wrap">
                     {p.tags ? (
                       JSON.parse(p.tags).map((tag: string) => (
-                        <Badge key={tag} variant="secondary" className="text-[10px] px-1.5 py-0">{tag}</Badge>
+                        <Badge key={tag} variant="light" size="sm">{tag}</Badge>
                       ))
                     ) : (
                       <span className="text-xs text-muted-foreground">—</span>
@@ -162,15 +150,21 @@ export function PatientsView({ locale }: { locale: Locale }) {
       </div>
 
       {/* Detail drawer */}
-      <Sheet open={!!selectedPatientId} onOpenChange={(o) => !o && setSelectedPatientId(null)}>
-        <SheetContent side="right" className="glass-base w-full sm:max-w-2xl p-0 overflow-y-auto">
-          {loadingDetail || !selectedPatient ? (
-            <div className="p-8"><SkeletonList rows={6} /></div>
-          ) : (
-            <PatientDetail patient={selectedPatient} locale={locale} />
-          )}
-        </SheetContent>
-      </Sheet>
+      <Drawer
+        opened={!!selectedPatientId}
+        onClose={() => setSelectedPatientId(null)}
+        position="right"
+        size="xl"
+        offset={8}
+        radius="lg"
+        classNames={{ content: 'glass-base' }}
+      >
+        {loadingDetail || !selectedPatient ? (
+          <div className="p-8"><SkeletonList rows={6} /></div>
+        ) : (
+          <PatientDetail patient={selectedPatient} locale={locale} />
+        )}
+      </Drawer>
 
       {/* New patient form */}
       <PatientForm open={newPatientOpen} onOpenChange={(o) => useApp.getState().setNewPatientOpen(o)} locale={locale} />
@@ -204,7 +198,7 @@ function PatientDetail({ patient, locale }: { patient: any; locale: Locale }) {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <SheetHeader className="px-5 pt-5 pb-4 border-b border-border/40 glass-base">
+      <div className="px-5 pt-5 pb-4 border-b border-border/40 glass-base">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-4 min-w-0">
             <div
@@ -217,8 +211,8 @@ function PatientDetail({ patient, locale }: { patient: any; locale: Locale }) {
               {(patient.firstName[0] + patient.lastName[0]).toUpperCase()}
             </div>
             <div className="min-w-0">
-              <SheetTitle className="text-xl">{patient.firstName} {patient.lastName}</SheetTitle>
-              <SheetDescription className="flex items-center gap-2 flex-wrap mt-1">
+              <h2 className="text-xl font-semibold">{patient.firstName} {patient.lastName}</h2>
+              <div className="flex items-center gap-2 flex-wrap mt-1">
                 {age && <span>{age} {t.common.yearsShort}</span>}
                 {patient.sex && <span>· {patient.sex}</span>}
                 {patient.bloodType && (
@@ -226,7 +220,7 @@ function PatientDetail({ patient, locale }: { patient: any; locale: Locale }) {
                     · <Droplet className="w-3 h-3" /> {patient.bloodType}
                   </span>
                 )}
-              </SheetDescription>
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
@@ -242,10 +236,11 @@ function PatientDetail({ patient, locale }: { patient: any; locale: Locale }) {
             <Button
               variant="outline"
               size="sm"
+              color="red"
               onClick={() => setBreakGlassDialog(true)}
-              className="text-destructive border-destructive/30 hover:bg-destructive/10"
+              leftSection={<Lock className="w-3.5 h-3.5" />}
             >
-              <Lock className="w-3.5 h-3.5" /> <span className="hidden md:inline">Break-glass</span>
+              <span className="hidden md:inline">Break-glass</span>
             </Button>
           </div>
         </div>
@@ -272,10 +267,10 @@ function PatientDetail({ patient, locale }: { patient: any; locale: Locale }) {
             <p className="text-xs font-medium">{patient.bloodType || '—'}</p>
           </div>
         </div>
-      </SheetHeader>
+      </div>
 
-      <ScrollArea className="flex-1 px-5 py-4">
-        <div className="space-y-5">
+      <ScrollArea className="flex-1" h="calc(100vh - 280px)">
+        <div className="px-5 py-4 space-y-5">
           {/* Contact */}
           <section>
             <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">{t.patients.demographics}</h3>
@@ -531,50 +526,54 @@ function AddAllergyDialog({ open, onOpenChange, patientId, onSuccess, locale }: 
         body: JSON.stringify({ substance, severity }),
       })
       if (!res.ok) throw new Error('Failed')
-      toast.success(t.patients.allergyAddedToast)
+      notifications.show({ message: t.patients.allergyAddedToast, color: 'green' })
       setSubstance('')
       setSeverity('moderate')
       onSuccess()
       onOpenChange(false)
     } catch (e) {
-      toast.error((e as Error).message)
+      notifications.show({ message: (e as Error).message, color: 'red' })
     } finally {
       setSubmitting(false)
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="glass-floating max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 text-destructive" />
-            {t.patients.newAllergy}
-          </DialogTitle>
-        </DialogHeader>
-        <div className="space-y-3 py-2">
-          <div className="space-y-1.5">
-            <Label>{t.patients.substance}</Label>
-            <Input value={substance} onChange={(e) => setSubstance(e.target.value)} placeholder={t.patients.substancePlaceholder} />
-          </div>
-          <div className="space-y-1.5">
-            <Label>{t.patients.severity}</Label>
-            <Select value={severity} onValueChange={setSeverity}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent className="glass-floating">
-                <SelectItem value="mild">{t.patients.severityLevels.mild}</SelectItem>
-                <SelectItem value="moderate">{t.patients.severityLevels.moderate}</SelectItem>
-                <SelectItem value="severe">{t.patients.severityLevels.severe}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-        <DialogFooter>
+    <Modal
+      opened={open}
+      onClose={() => onOpenChange(false)}
+      title={
+        <Group gap="sm">
+          <AlertTriangle className="w-4 h-4 text-destructive" />
+          <span>{t.patients.newAllergy}</span>
+        </Group>
+      }
+    >
+      <Stack gap="sm">
+        <TextInput
+          label={t.patients.substance}
+          variant="filled"
+          value={substance}
+          onChange={(e) => setSubstance(e.target.value)}
+          placeholder={t.patients.substancePlaceholder}
+        />
+        <Select
+          label={t.patients.severity}
+          variant="filled"
+          value={severity}
+          onChange={(v) => setSeverity(v || 'moderate')}
+          data={[
+            { value: 'mild', label: t.patients.severityLevels.mild },
+            { value: 'moderate', label: t.patients.severityLevels.moderate },
+            { value: 'severe', label: t.patients.severityLevels.severe },
+          ]}
+        />
+        <Group justify="flex-end" mt="sm">
           <Button variant="outline" onClick={() => onOpenChange(false)}>{t.common.cancel}</Button>
-          <Button onClick={submit} disabled={submitting || !substance.trim()}>{t.common.save}</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          <Button onClick={submit} disabled={submitting || !substance.trim()} loading={submitting}>{t.common.save}</Button>
+        </Group>
+      </Stack>
+    </Modal>
   )
 }
 
@@ -609,58 +608,69 @@ function AddVitalDialog({ open, onOpenChange, patientId, onSuccess, locale }: an
         body: JSON.stringify({ type, value, unit, recordedBy: 'Dr. Current' }),
       })
       if (!res.ok) throw new Error('Failed')
-      toast.success(t.patients.vitalRecordedToast)
+      notifications.show({ message: t.patients.vitalRecordedToast, color: 'green' })
       setValue('')
       onSuccess()
       onOpenChange(false)
     } catch (e) {
-      toast.error((e as Error).message)
+      notifications.show({ message: (e as Error).message, color: 'red' })
     } finally {
       setSubmitting(false)
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="glass-floating max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Activity className="w-4 h-4 text-primary" />
-            {t.patients.newVital}
-          </DialogTitle>
-        </DialogHeader>
-        <div className="space-y-3 py-2">
-          <div className="space-y-1.5">
-            <Label>{t.common.type}</Label>
-            <Select value={type} onValueChange={handleTypeChange}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent className="glass-floating">
-                <SelectItem value="blood_pressure">{t.patients.bloodPressure}</SelectItem>
-                <SelectItem value="heart_rate">{t.patients.heartRate}</SelectItem>
-                <SelectItem value="temperature">{t.patients.temperature}</SelectItem>
-                <SelectItem value="spo2">{t.patients.spo2}</SelectItem>
-                <SelectItem value="weight">{t.patients.weight}</SelectItem>
-                <SelectItem value="height">{t.patients.height}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div className="space-y-1.5">
-              <Label>{t.common.value}</Label>
-              <Input value={value} onChange={(e) => setValue(e.target.value)} placeholder={type === 'blood_pressure' ? '120/80' : '...'} className="font-mono" />
-            </div>
-            <div className="space-y-1.5">
-              <Label>{t.patients.unit}</Label>
-              <Input value={unit} onChange={(e) => setUnit(e.target.value)} />
-            </div>
-          </div>
-        </div>
-        <DialogFooter>
+    <Modal
+      opened={open}
+      onClose={() => onOpenChange(false)}
+      title={
+        <Group gap="sm">
+          <Activity className="w-4 h-4 text-primary" />
+          <span>{t.patients.newVital}</span>
+        </Group>
+      }
+    >
+      <Stack gap="sm">
+        <Select
+          label={t.common.type}
+          variant="filled"
+          value={type}
+          onChange={(v) => v && handleTypeChange(v)}
+          data={[
+            { value: 'blood_pressure', label: t.patients.bloodPressure },
+            { value: 'heart_rate', label: t.patients.heartRate },
+            { value: 'temperature', label: t.patients.temperature },
+            { value: 'spo2', label: t.patients.spo2 },
+            { value: 'weight', label: t.patients.weight },
+            { value: 'height', label: t.patients.height },
+          ]}
+        />
+        <Grid gap="sm">
+          <Grid.Col span={6}>
+            <TextInput
+              label={t.common.value}
+              variant="filled"
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              placeholder={type === 'blood_pressure' ? '120/80' : '...'}
+              classNames={{ input: 'font-mono' }}
+            />
+          </Grid.Col>
+          <Grid.Col span={6}>
+            <TextInput
+              label={t.patients.unit}
+              variant="filled"
+              value={unit}
+              onChange={(e) => setUnit(e.target.value)}
+            />
+          </Grid.Col>
+        </Grid>
+        <Group justify="flex-end" mt="sm">
           <Button variant="outline" onClick={() => onOpenChange(false)}>{t.common.cancel}</Button>
-          <Button onClick={submit} disabled={submitting || !value.trim()}>{t.common.save}</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          <Button onClick={submit} disabled={submitting || !value.trim()} loading={submitting}>{t.common.save}</Button>
+        </Group>
+      </Stack>
+    </Modal>
   )
 }
 
@@ -688,71 +698,69 @@ function BreakGlassDialog({ open, onOpenChange, patient, locale }: any) {
         throw new Error(err.error || 'Failed')
       }
       const result = await res.json()
-      toast.success(t.audit.breakGlassLoggedToast.replace('{hash}', result.hash.slice(0, 12)))
-      toast.warning(t.audit.complianceOfficerNotifiedToast, { duration: 5000 })
+      notifications.show({ message: t.audit.breakGlassLoggedToast.replace('{hash}', result.hash.slice(0, 12)), color: 'green' })
+      notifications.show({ message: t.audit.complianceOfficerNotifiedToast, color: 'yellow', autoClose: 5000 })
       setReason('')
       setJustification('')
       onOpenChange(false)
     } catch (e) {
-      toast.error((e as Error).message)
+      notifications.show({ message: (e as Error).message, color: 'red' })
     } finally {
       setSubmitting(false)
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="glass-floating max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-destructive">
-            <Lock className="w-5 h-5" />
-            {t.audit.breakGlassTitle}
-          </DialogTitle>
-          <DialogDescription className="text-destructive/80">
-            {t.audit.breakGlassDesc
-              .replace('{firstName}', patient.firstName)
-              .replace('{lastName}', patient.lastName)}
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-3 py-2">
-          <div className="space-y-1.5">
-            <Label>{t.audit.emergencyReason}</Label>
-            <Input
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              placeholder={t.audit.emergencyReasonPlaceholder}
-            />
-            {reason.length > 0 && reason.length < 10 && (
-              <p className="text-[10px] text-destructive">{t.common.minChars.replace('{n}', '10')}</p>
-            )}
-          </div>
-          <div className="space-y-1.5">
-            <Label>{t.audit.detailedJustification}</Label>
-            <Textarea
-              rows={4}
-              value={justification}
-              onChange={(e) => setJustification(e.target.value)}
-              placeholder={t.audit.detailedJustificationPlaceholder}
-            />
-            {justification.length > 0 && justification.length < 20 && (
-              <p className="text-[10px] text-destructive">{t.common.minChars.replace('{n}', '20')}</p>
-            )}
-            <p className="text-[10px] text-muted-foreground">{justification.length}/20</p>
-          </div>
-        </div>
-        <DialogFooter>
+    <Modal
+      opened={open}
+      onClose={() => onOpenChange(false)}
+      size="lg"
+      title={
+        <Group gap="sm" className="text-destructive">
+          <Lock className="w-5 h-5" />
+          <span>{t.audit.breakGlassTitle}</span>
+        </Group>
+      }
+    >
+      <Stack gap="sm">
+        <p className="text-sm text-destructive/80">
+          {t.audit.breakGlassDesc
+            .replace('{firstName}', patient.firstName)
+            .replace('{lastName}', patient.lastName)}
+        </p>
+        <TextInput
+          label={t.audit.emergencyReason}
+          variant="filled"
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          placeholder={t.audit.emergencyReasonPlaceholder}
+          error={reason.length > 0 && reason.length < 10 ? t.common.minChars.replace('{n}', '10') : null}
+        />
+        <Textarea
+          label={t.audit.detailedJustification}
+          variant="filled"
+          autosize
+          minRows={4}
+          value={justification}
+          onChange={(e) => setJustification(e.target.value)}
+          placeholder={t.audit.detailedJustificationPlaceholder}
+          error={justification.length > 0 && justification.length < 20 ? t.common.minChars.replace('{n}', '20') : null}
+        />
+        <p className="text-[10px] text-muted-foreground">{justification.length}/20</p>
+        <Group justify="flex-end" mt="sm">
           <Button variant="outline" onClick={() => onOpenChange(false)}>{t.common.cancel}</Button>
           <Button
+            color="red"
             onClick={submit}
             disabled={submitting || reason.length < 10 || justification.length < 20}
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            loading={submitting}
+            leftSection={<Lock className="w-3.5 h-3.5" />}
           >
-            <Lock className="w-3.5 h-3.5" />
             {t.audit.confirmBreakGlass}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </Group>
+      </Stack>
+    </Modal>
   )
 }
 

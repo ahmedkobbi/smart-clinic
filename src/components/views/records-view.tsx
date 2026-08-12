@@ -1,29 +1,21 @@
 'use client'
 
 import { useApp } from '@/lib/store'
-import { getDict, formatDate, formatDateTime, type Locale } from '@/lib/i18n'
+import { getDict, formatDateTime, type Locale } from '@/lib/i18n'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-  FileText, Plus, Sparkles, ShieldCheck, AlertCircle, Pill, Search,
-  Loader2, Wand2, Check, X, Lock,
+  FileText, Plus, Sparkles, ShieldCheck, AlertCircle, Search,
+  Loader2, Wand2,
 } from 'lucide-react'
 import { useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Badge } from '@/components/ui/badge'
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
-} from '@/components/ui/dialog'
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select'
-import { ScrollArea } from '@/components/ui/scroll-area'
+  Button, TextInput, Textarea, Badge, Modal, Select,
+  Group, Stack, Grid,
+} from '@mantine/core'
 import { EmptyState } from '@/components/common/empty-state'
 import { SkeletonCard } from '@/components/common/skeleton'
-import { toast } from 'sonner'
+import { notifications } from '@mantine/notifications'
 
 async function fetchConsultations() {
   const res = await fetch('/api/consultations?limit=100', { cache: 'no-store' })
@@ -96,20 +88,19 @@ export function RecordsView({ locale }: { locale: Locale }) {
 
   return (
     <div className="p-4 md:p-6 space-y-4 pb-24">
-      <div className="flex items-center gap-3">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={t.records.searchPlaceholder}
-            className="pl-10 glass-base border-0 h-11"
-          />
-        </div>
-        <Button onClick={() => setDialogOpen(true)} className="bg-primary text-primary-foreground h-11">
-          <Plus className="w-4 h-4" /> {t.records.new}
+      <Group gap="sm" align="stretch">
+        <TextInput
+          leftSection={<Search className="w-4 h-4" />}
+          placeholder={t.records.searchPlaceholder}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          variant="filled"
+          className="flex-1"
+        />
+        <Button onClick={() => setDialogOpen(true)} leftSection={<Plus className="w-4 h-4" />}>
+          {t.records.new}
         </Button>
-      </div>
+      </Group>
 
       {/* AI banner — non-diagnostic, human-in-the-loop */}
       <motion.div
@@ -123,7 +114,7 @@ export function RecordsView({ locale }: { locale: Locale }) {
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
             <p className="text-sm font-semibold">{t.ai.scribe}</p>
-            <Badge variant="outline" className="text-[10px] animate-pulse-glow">{t.ai.badge}</Badge>
+            <Badge variant="outline" size="sm" className="animate-pulse-glow">{t.ai.badge}</Badge>
           </div>
           <p className="text-xs text-muted-foreground leading-relaxed">{t.ai.nonDiagnostic}</p>
         </div>
@@ -132,8 +123,9 @@ export function RecordsView({ locale }: { locale: Locale }) {
           variant="outline"
           onClick={() => setDialogOpen(true)}
           className="shrink-0"
+          leftSection={<Wand2 className="w-3.5 h-3.5" />}
         >
-          <Wand2 className="w-3.5 h-3.5" /> {t.records.generateDraft}
+          {t.records.generateDraft}
         </Button>
       </motion.div>
 
@@ -199,10 +191,10 @@ function ConsultationCard({ consultation: c, locale, index, onPatientClick, onSi
         const err = await res.json()
         throw new Error(err.error || 'Failed')
       }
-      toast.success(t.records.signedToast)
+      notifications.show({ message: t.records.signedToast, color: 'green' })
       onSigned()
     } catch (e) {
-      toast.error((e as Error).message)
+      notifications.show({ message: (e as Error).message, color: 'red' })
     } finally {
       setSigning(false)
     }
@@ -236,14 +228,10 @@ function ConsultationCard({ consultation: c, locale, index, onPatientClick, onSi
 
       <div className="flex items-center gap-1.5 flex-wrap mb-3">
         {c.diagnosisCodes && JSON.parse(c.diagnosisCodes).map((dx: any) => (
-          <Badge key={dx.code} variant="secondary" className="text-[10px] font-mono">
-            {dx.code}
-          </Badge>
+          <Badge key={dx.code} variant="light" size="sm" className="font-mono">{dx.code}</Badge>
         ))}
         {c.procedureCodes && JSON.parse(c.procedureCodes).map((pc: any) => (
-          <Badge key={pc.code} variant="outline" className="text-[10px] font-mono">
-            {pc.code}
-          </Badge>
+          <Badge key={pc.code} variant="outline" size="sm" className="font-mono">{pc.code}</Badge>
         ))}
       </div>
 
@@ -264,13 +252,13 @@ function ConsultationCard({ consultation: c, locale, index, onPatientClick, onSi
         </div>
         {!c.signedAt && (
           <Button
-            size="sm"
+            size="xs"
             variant="outline"
             onClick={handleSign}
             disabled={signing}
-            className="h-7 text-[11px]"
+            loading={signing}
+            leftSection={signing ? <Loader2 className="w-3 h-3 animate-spin" /> : <ShieldCheck className="w-3 h-3" />}
           >
-            {signing ? <Loader2 className="w-3 h-3 animate-spin" /> : <ShieldCheck className="w-3 h-3" />}
             {t.records.signConsultation}
           </Button>
         )}
@@ -299,7 +287,7 @@ function ConsultationForm({ open, onOpenChange, locale, patients, practitioners,
 
   const handleGenerate = async () => {
     if (!form.chiefComplaint.trim()) {
-      toast.error(t.records.chiefRequiredToast)
+      notifications.show({ message: t.records.chiefRequiredToast, color: 'red' })
       return
     }
     setGenerating(true)
@@ -333,10 +321,10 @@ function ConsultationForm({ open, onOpenChange, locale, patients, practitioners,
         aiDrafted: true,
         aiConfidence: draft.confidence || 0.7,
       })
-      toast.success(t.records.aiDraftGeneratedToast.replace('{percent}', String(Math.round((draft.confidence || 0.7) * 100))))
-      toast.warning(t.records.aiDraftValidationToast, { duration: 5000 })
+      notifications.show({ message: t.records.aiDraftGeneratedToast.replace('{percent}', String(Math.round((draft.confidence || 0.7) * 100))), color: 'green' })
+      notifications.show({ message: t.records.aiDraftValidationToast, color: 'yellow', autoClose: 5000 })
     } catch (e) {
-      toast.error((e as Error).message)
+      notifications.show({ message: (e as Error).message, color: 'red' })
     } finally {
       setGenerating(false)
     }
@@ -344,7 +332,7 @@ function ConsultationForm({ open, onOpenChange, locale, patients, practitioners,
 
   const handleSubmit = async () => {
     if (!form.patientId || !form.practitionerId) {
-      toast.error(t.common.patientPractitionerRequired)
+      notifications.show({ message: t.common.patientPractitionerRequired, color: 'red' })
       return
     }
     setSubmitting(true)
@@ -362,7 +350,7 @@ function ConsultationForm({ open, onOpenChange, locale, patients, practitioners,
         }),
       })
       if (!res.ok) throw new Error('Failed')
-      toast.success(t.records.consultationSavedToast)
+      notifications.show({ message: t.records.consultationSavedToast, color: 'green' })
       onSuccess()
       onOpenChange(false)
       setForm({
@@ -371,93 +359,130 @@ function ConsultationForm({ open, onOpenChange, locale, patients, practitioners,
         aiDrafted: false, aiConfidence: 0,
       })
     } catch (e) {
-      toast.error((e as Error).message)
+      notifications.show({ message: (e as Error).message, color: 'red' })
     } finally {
       setSubmitting(false)
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="glass-floating max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <FileText className="w-5 h-5 text-primary" />
-            {t.records.new}
-          </DialogTitle>
-          <DialogDescription>{t.records.subtitle}</DialogDescription>
-        </DialogHeader>
+    <Modal
+      opened={open}
+      onClose={() => onOpenChange(false)}
+      size="xl"
+      title={
+        <Group gap="sm">
+          <FileText className="w-5 h-5 text-primary" />
+          <span>{t.records.new}</span>
+        </Group>
+      }
+    >
+      <Stack gap="sm">
+        <p className="text-xs text-muted-foreground">{t.records.subtitle}</p>
 
-        <div className="grid grid-cols-2 gap-3 py-2">
-          <div className="space-y-1.5">
-            <Label>{t.appointments.patient} *</Label>
-            <Select value={form.patientId} onValueChange={(v) => setForm({ ...form, patientId: v })}>
-              <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-              <SelectContent className="glass-floating max-h-72">
-                {patients.map((p: any) => (
-                  <SelectItem key={p.id} value={p.id}>{p.firstName} {p.lastName}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <Label>{t.appointments.practitioner} *</Label>
-            <Select value={form.practitionerId} onValueChange={(v) => setForm({ ...form, practitionerId: v })}>
-              <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-              <SelectContent className="glass-floating max-h-72">
-                {practitioners.map((p: any) => (
-                  <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+        <Grid gap="sm">
+          <Grid.Col span={{ base: 12, sm: 6 }}>
+            <Select
+              label={`${t.appointments.patient} *`}
+              placeholder="—"
+              variant="filled"
+              value={form.patientId}
+              onChange={(v) => setForm({ ...form, patientId: v || '' })}
+              data={patients.map((p: any) => ({ value: p.id, label: `${p.firstName} ${p.lastName}` }))}
+              searchable
+            />
+          </Grid.Col>
+          <Grid.Col span={{ base: 12, sm: 6 }}>
+            <Select
+              label={`${t.appointments.practitioner} *`}
+              placeholder="—"
+              variant="filled"
+              value={form.practitionerId}
+              onChange={(v) => setForm({ ...form, practitionerId: v || '' })}
+              data={practitioners.map((p: any) => ({ value: p.id, label: p.name }))}
+              searchable
+            />
+          </Grid.Col>
 
-          <div className="space-y-1.5 col-span-2">
-            <div className="flex items-center justify-between">
-              <Label>{t.records.chief}</Label>
+          <Grid.Col span={12}>
+            <Group justify="space-between" align="flex-end">
+              <TextInput
+                label={t.records.chief}
+                variant="filled"
+                value={form.chiefComplaint}
+                onChange={(e) => setForm({ ...form, chiefComplaint: e.target.value })}
+                placeholder={t.records.chiefPlaceholder}
+                className="flex-1"
+              />
               <Button
                 size="sm"
                 variant="outline"
                 onClick={handleGenerate}
                 disabled={generating || !form.chiefComplaint.trim()}
-                className="h-7 text-[11px] ai-glow border-glass-accent/30 text-glass-accent hover:bg-glass-accent/10"
+                loading={generating}
+                leftSection={generating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
+                className="ai-glow border-glass-accent/30 text-glass-accent hover:bg-glass-accent/10 ml-2"
               >
-                {generating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
                 {t.ai.scribe}
               </Button>
-            </div>
-            <Input value={form.chiefComplaint} onChange={(e) => setForm({ ...form, chiefComplaint: e.target.value })} placeholder={t.records.chiefPlaceholder} />
-          </div>
+            </Group>
+          </Grid.Col>
 
           {form.aiDrafted && (
-            <div className="col-span-2 p-2 rounded-lg bg-glass-accent/10 border border-glass-accent/30 flex items-center gap-2 text-[11px] text-glass-accent">
-              <Sparkles className="w-3.5 h-3.5 animate-pulse-glow" />
-              <span>{t.records.aiDraftConfidence}: {Math.round(form.aiConfidence * 100)}%</span>
-              <span className="text-muted-foreground">·</span>
-              <span>{t.records.editBeforeSign}</span>
-            </div>
+            <Grid.Col span={12}>
+              <div className="p-2 rounded-lg bg-glass-accent/10 border border-glass-accent/30 flex items-center gap-2 text-[11px] text-glass-accent">
+                <Sparkles className="w-3.5 h-3.5 animate-pulse-glow" />
+                <span>{t.records.aiDraftConfidence}: {Math.round(form.aiConfidence * 100)}%</span>
+                <span className="text-muted-foreground">·</span>
+                <span>{t.records.editBeforeSign}</span>
+              </div>
+            </Grid.Col>
           )}
 
-          <div className="space-y-1.5 col-span-2">
-            <Label>{t.records.history}</Label>
-            <Textarea rows={2} value={form.history} onChange={(e) => setForm({ ...form, history: e.target.value })} />
-          </div>
-          <div className="space-y-1.5 col-span-2">
-            <Label>{t.records.examination}</Label>
-            <Textarea rows={2} value={form.examination} onChange={(e) => setForm({ ...form, examination: e.target.value })} />
-          </div>
-          <div className="space-y-1.5 col-span-2">
-            <Label>{t.records.assessment}</Label>
-            <Textarea rows={2} value={form.assessment} onChange={(e) => setForm({ ...form, assessment: e.target.value })} />
-          </div>
-          <div className="space-y-1.5 col-span-2">
-            <Label>{t.records.plan}</Label>
-            <Textarea rows={2} value={form.plan} onChange={(e) => setForm({ ...form, plan: e.target.value })} />
-          </div>
+          <Grid.Col span={12}>
+            <Textarea
+              label={t.records.history}
+              variant="filled"
+              autosize
+              minRows={2}
+              value={form.history}
+              onChange={(e) => setForm({ ...form, history: e.target.value })}
+            />
+          </Grid.Col>
+          <Grid.Col span={12}>
+            <Textarea
+              label={t.records.examination}
+              variant="filled"
+              autosize
+              minRows={2}
+              value={form.examination}
+              onChange={(e) => setForm({ ...form, examination: e.target.value })}
+            />
+          </Grid.Col>
+          <Grid.Col span={12}>
+            <Textarea
+              label={t.records.assessment}
+              variant="filled"
+              autosize
+              minRows={2}
+              value={form.assessment}
+              onChange={(e) => setForm({ ...form, assessment: e.target.value })}
+            />
+          </Grid.Col>
+          <Grid.Col span={12}>
+            <Textarea
+              label={t.records.plan}
+              variant="filled"
+              autosize
+              minRows={2}
+              value={form.plan}
+              onChange={(e) => setForm({ ...form, plan: e.target.value })}
+            />
+          </Grid.Col>
 
-          <div className="space-y-1.5 col-span-2">
-            <Label>{t.records.diagnosisCodes}</Label>
-            <div className="flex flex-wrap gap-1.5 p-2 rounded-lg glass-base max-h-32 overflow-y-auto scroll-area-glass">
+          <Grid.Col span={12}>
+            <p className="text-xs font-medium text-muted-foreground">{t.records.diagnosisCodes}</p>
+            <div className="flex flex-wrap gap-1.5 p-2 rounded-lg glass-base max-h-32 overflow-y-auto scroll-area-glass mt-1">
               {ICD10_CODES.map(dx => {
                 const sel = form.selectedDx.includes(dx.code)
                 return (
@@ -475,11 +500,11 @@ function ConsultationForm({ open, onOpenChange, locale, patients, practitioners,
                 )
               })}
             </div>
-          </div>
+          </Grid.Col>
 
-          <div className="space-y-1.5 col-span-2">
-            <Label>{t.records.procedureCodes}</Label>
-            <div className="flex flex-wrap gap-1.5 p-2 rounded-lg glass-base max-h-32 overflow-y-auto scroll-area-glass">
+          <Grid.Col span={12}>
+            <p className="text-xs font-medium text-muted-foreground">{t.records.procedureCodes}</p>
+            <div className="flex flex-wrap gap-1.5 p-2 rounded-lg glass-base max-h-32 overflow-y-auto scroll-area-glass mt-1">
               {CCAM_CODES.map(pc => {
                 const sel = form.selectedCcam.includes(pc.code)
                 return (
@@ -497,25 +522,24 @@ function ConsultationForm({ open, onOpenChange, locale, patients, practitioners,
                 )
               })}
             </div>
-          </div>
-        </div>
+          </Grid.Col>
+        </Grid>
 
-        <DialogFooter className="flex items-center justify-between">
+        <Group justify="space-between" mt="sm">
           <p className="text-[11px] text-muted-foreground flex items-center gap-1">
             <AlertCircle className="w-3 h-3" />
             {t.records.signReason}
           </p>
-          <div className="flex gap-2">
+          <Group gap="sm">
             <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
               {t.common.cancel}
             </Button>
-            <Button onClick={handleSubmit} disabled={submitting}>
-              {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+            <Button onClick={handleSubmit} loading={submitting} leftSection={submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}>
               {t.common.save}
             </Button>
-          </div>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          </Group>
+        </Group>
+      </Stack>
+    </Modal>
   )
 }

@@ -9,9 +9,8 @@ import {
   MessageSquare, FileText, Settings, Users, Wifi,
 } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { toast } from 'sonner'
+import { Button, Badge } from '@mantine/core'
+import { notifications } from '@mantine/notifications'
 
 async function fetchTelemedicineAppts() {
   const today = new Date().toISOString().slice(0, 10)
@@ -61,7 +60,7 @@ export function TelemedicineView({ locale }: { locale: Locale }) {
           }
         })
         .catch(() => {
-          toast.error(t.telemedicine.cameraDeniedToast)
+          notifications.show({ message: t.telemedicine.cameraDeniedToast, color: 'red' })
           setVideoOn(false)
         })
     }
@@ -86,7 +85,7 @@ export function TelemedicineView({ locale }: { locale: Locale }) {
     }
     setInCall(false)
     setSelectedAppt(null)
-    toast.success(t.telemedicine.callEndedToast.replace('{duration}', formatDuration(elapsed)))
+    notifications.show({ message: t.telemedicine.callEndedToast.replace('{duration}', formatDuration(elapsed)), color: 'green' })
   }
 
   const toggleVideo = () => {
@@ -285,8 +284,8 @@ export function TelemedicineView({ locale }: { locale: Locale }) {
                   </Badge>
                   <Button
                     size="sm"
+                    color="green"
                     onClick={() => startCall(appt)}
-                    className="bg-success text-success-foreground hover:bg-success/90 h-8"
                   >
                     <Phone className="w-3.5 h-3.5" />
                     {t.telemedicine.start}

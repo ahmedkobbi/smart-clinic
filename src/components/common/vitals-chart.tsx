@@ -1,10 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import {
-  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
-  Legend,
-} from 'recharts'
+import { LineChart } from '@mantine/charts'
 import type { Locale } from '@/lib/i18n'
 import { getDict, formatDate } from '@/lib/i18n'
 import { Activity, Heart, Thermometer, Droplet } from 'lucide-react'
@@ -75,40 +72,46 @@ export function VitalsChart({ vitals, locale }: VitalsChartProps) {
           {hasTemp && <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-chart-3" />T°</span>}
         </div>
       </div>
-      <ResponsiveContainer width="100%" height={180}>
-        <LineChart data={chartData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.5 0.02 250 / 0.12)" vertical={false} />
-          <XAxis
-            dataKey="date"
-            tick={{ fontSize: 10 }}
-            stroke="oklch(0.5 0.02 250 / 0.5)"
-            tickFormatter={(d) => formatDate(d, locale)}
-          />
-          <YAxis tick={{ fontSize: 10 }} stroke="oklch(0.5 0.02 250 / 0.5)" />
-          <Tooltip
-            contentStyle={{
-              background: 'var(--glass-floating-bg)',
-              backdropFilter: 'blur(20px)',
-              border: '1px solid var(--glass-floating-border)',
-              borderRadius: 12,
-              fontSize: 11,
-            }}
-            labelFormatter={(d) => formatDate(d as string, locale)}
-          />
-          {hasBP && (
-            <>
-              <Line type="monotone" dataKey="bp_sys" stroke="var(--chart-1)" strokeWidth={2} dot={{ r: 3 }} name="TA Sys" />
-              <Line type="monotone" dataKey="bp_dia" stroke="var(--chart-1)" strokeWidth={1.5} dot={false} strokeDasharray="4 4" name="TA Dia" />
-            </>
-          )}
-          {hasHR && (
-            <Line type="monotone" dataKey="hr" stroke="var(--chart-4)" strokeWidth={2} dot={{ r: 3 }} name="FC (bpm)" />
-          )}
-          {hasTemp && (
-            <Line type="monotone" dataKey="temp" stroke="var(--chart-3)" strokeWidth={2} dot={{ r: 3 }} name="T° (°C)" />
-          )}
-        </LineChart>
-      </ResponsiveContainer>
+      <LineChart
+        h={180}
+        data={chartData}
+        dataKey="date"
+        series={[
+          ...(hasBP ? [
+            { name: 'bp_sys', color: 'var(--chart-1)', label: 'TA Sys' },
+            { name: 'bp_dia', color: 'var(--chart-1)', label: 'TA Dia' },
+          ] : []),
+          ...(hasHR ? [{ name: 'hr', color: 'var(--chart-4)', label: 'FC (bpm)' }] : []),
+          ...(hasTemp ? [{ name: 'temp', color: 'var(--chart-3)', label: 'T° (°C)' }] : []),
+        ]}
+        xAxisProps={{ tick: { fontSize: 10 }, tickFormatter: (value: any) => formatDate(String(value), locale) }}
+        yAxisProps={{ tick: { fontSize: 10 } }}
+        gridProps={{ strokeDasharray: '3 3' }}
+        tooltipProps={{
+          content: ({ label, payload }: any) =>
+            payload && payload.length > 0 ? (
+              <div
+                style={{
+                  background: 'var(--glass-floating-bg)',
+                  backdropFilter: 'blur(20px)',
+                  border: '1px solid var(--glass-floating-border)',
+                  borderRadius: 12,
+                  fontSize: 11,
+                  padding: 8,
+                }}
+              >
+                <p style={{ fontSize: 10, opacity: 0.7, marginBottom: 4 }}>
+                  {formatDate(String(label), locale)}
+                </p>
+                {payload.map((p: any, idx: number) => (
+                  <p key={idx} style={{ color: p.color, fontFamily: 'monospace' }}>
+                    {p.name}: {p.value}
+                  </p>
+                ))}
+              </div>
+            ) : null,
+        }}
+      />
 
       {/* Latest values summary */}
       <div className="grid grid-cols-3 gap-2 mt-3">

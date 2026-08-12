@@ -5,23 +5,16 @@ import { getDict, formatCurrency, formatDate, type Locale } from '@/lib/i18n'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-  Receipt, Plus, Search, Download, Check, Clock, AlertTriangle,
-  CreditCard, Banknote, Building2, FileText, Loader2, FileDown,
+  Receipt, Plus, Search, Check, Clock, AlertTriangle,
+  Building2, Loader2, FileDown,
 } from 'lucide-react'
 import { useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select'
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
-} from '@/components/ui/dialog'
+  Button, TextInput, Badge, Select, ScrollArea, Modal, Stack,
+  Group, Checkbox, Text,
+} from '@mantine/core'
 import { StatusPill, invoiceStatusVariant } from '@/components/common/status-pill'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { toast } from 'sonner'
+import { notifications } from '@mantine/notifications'
 
 interface InvoiceList { items: any[]; total: number }
 
@@ -92,33 +85,33 @@ export function BillingView({ locale }: { locale: Locale }) {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={t.billing.searchPlaceholder}
-            className="pl-10 glass-base border-0"
-          />
-        </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-full md:w-48 glass-base border-0">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent className="glass-floating">
-            <SelectItem value="all">{t.common.allStatuses}</SelectItem>
-            <SelectItem value="paid">{t.billing.status.paid}</SelectItem>
-            <SelectItem value="pending">{t.billing.status.pending}</SelectItem>
-            <SelectItem value="partial">{t.billing.status.partial}</SelectItem>
-            <SelectItem value="overdue">{t.billing.status.overdue}</SelectItem>
-            <SelectItem value="issued">{t.billing.status.issued}</SelectItem>
-          </SelectContent>
-        </Select>
-        <Button onClick={() => setDialogOpen(true)} className="bg-primary text-primary-foreground">
-          <Plus className="w-4 h-4" /> {t.billing.new}
+      <Group gap="sm" align="stretch" className="flex flex-col md:flex-row md:items-center">
+        <TextInput
+          leftSection={<Search className="w-4 h-4" />}
+          placeholder={t.billing.searchPlaceholder}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          variant="filled"
+          className="flex-1"
+        />
+        <Select
+          value={statusFilter}
+          onChange={(v) => setStatusFilter(v || 'all')}
+          data={[
+            { value: 'all', label: t.common.allStatuses },
+            { value: 'paid', label: t.billing.status.paid },
+            { value: 'pending', label: t.billing.status.pending },
+            { value: 'partial', label: t.billing.status.partial },
+            { value: 'overdue', label: t.billing.status.overdue },
+            { value: 'issued', label: t.billing.status.issued },
+          ]}
+          variant="filled"
+          w={{ base: '100%', md: 200 }}
+        />
+        <Button onClick={() => setDialogOpen(true)} leftSection={<Plus className="w-4 h-4" />}>
+          {t.billing.new}
         </Button>
-      </div>
+      </Group>
 
       {/* Invoice list */}
       <div className="glass-card rounded-2xl overflow-hidden">
@@ -131,7 +124,7 @@ export function BillingView({ locale }: { locale: Locale }) {
           <div className="col-span-2 md:col-span-2 text-right">{t.common.status}</div>
           <div className="col-span-2 md:col-span-1 text-right">{t.common.actions}</div>
         </div>
-        <ScrollArea className="h-[60vh]">
+        <ScrollArea h="60vh">
           {isLoading ? (
             <div className="p-8 text-center text-sm text-muted-foreground">{t.common.loading}</div>
           ) : (data?.items || []).length === 0 ? (
@@ -185,10 +178,10 @@ function InvoiceRow({ inv, i, locale, t, onClick, onPaid }: any) {
         const err = await res.json()
         throw new Error(err.error || 'Failed')
       }
-      toast.success(t.billing.invoicePaidToast.replace('{number}', inv.number))
+      notifications.show({ message: t.billing.invoicePaidToast.replace('{number}', inv.number), color: 'green' })
       onPaid()
     } catch (e) {
-      toast.error((e as Error).message)
+      notifications.show({ message: (e as Error).message, color: 'red' })
     } finally {
       setMarking(false)
     }
@@ -215,7 +208,7 @@ function InvoiceRow({ inv, i, locale, t, onClick, onPaid }: any) {
       </div>
       <div className="col-span-2 hidden md:flex items-center">
         {inv.tiersPayant ? (
-          <Badge variant="secondary" className="text-[10px]">CPAM</Badge>
+          <Badge variant="light" size="sm">CPAM</Badge>
         ) : (
           <span className="text-[10px] text-muted-foreground">—</span>
         )}
@@ -296,6 +289,7 @@ function InvoiceForm({ open, onOpenChange, locale, patients, onSuccess }: any) {
     tiersPayant: true,
     paymentMethod: 'card',
   })
+  const [ccamValue, setCcamValue] = useState<string | null>(null)
 
   const addCcam = (code: string) => {
     const ccam = CCAM_CODES.find(c => c.code === code)
@@ -310,6 +304,7 @@ function InvoiceForm({ open, onOpenChange, locale, patients, onSuccess }: any) {
         unitPrice: ccam.price,
       }],
     })
+    setCcamValue(null)
   }
 
   const removeItem = (idx: number) => {
@@ -320,7 +315,7 @@ function InvoiceForm({ open, onOpenChange, locale, patients, onSuccess }: any) {
 
   const handleSubmit = async () => {
     if (!form.patientId || form.items.length === 0) {
-      toast.error(t.billing.patientItemRequiredToast)
+      notifications.show({ message: t.billing.patientItemRequiredToast, color: 'red' })
       return
     }
     setSubmitting(true)
@@ -331,119 +326,115 @@ function InvoiceForm({ open, onOpenChange, locale, patients, onSuccess }: any) {
         body: JSON.stringify(form),
       })
       if (!res.ok) throw new Error('Failed')
-      toast.success(t.billing.createdToast)
+      notifications.show({ message: t.billing.createdToast, color: 'green' })
       onSuccess()
       onOpenChange(false)
       setForm({ patientId: '', items: [], tiersPayant: true, paymentMethod: 'card' })
     } catch (e) {
-      toast.error((e as Error).message)
+      notifications.show({ message: (e as Error).message, color: 'red' })
     } finally {
       setSubmitting(false)
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="glass-floating max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Receipt className="w-5 h-5 text-primary" />
-            {t.billing.new}
-          </DialogTitle>
-          <DialogDescription>{t.billing.subtitle}</DialogDescription>
-        </DialogHeader>
+    <Modal
+      opened={open}
+      onClose={() => onOpenChange(false)}
+      size="lg"
+      title={
+        <Group gap="sm">
+          <Receipt className="w-5 h-5 text-primary" />
+          <span>{t.billing.new}</span>
+        </Group>
+      }
+    >
+      <Stack gap="sm">
+        <Text size="xs" c="dimmed">{t.billing.subtitle}</Text>
 
-        <div className="grid grid-cols-2 gap-3 py-2">
-          <div className="space-y-1.5 col-span-2">
-            <Label>{t.billing.patient} *</Label>
-            <Select value={form.patientId} onValueChange={(v) => setForm({ ...form, patientId: v })}>
-              <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-              <SelectContent className="glass-floating max-h-72">
-                {patients.map((p: any) => (
-                  <SelectItem key={p.id} value={p.id}>{p.firstName} {p.lastName} — {p.mutuelle || 'CPAM'}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        <Select
+          label={`${t.billing.patient} *`}
+          placeholder="—"
+          variant="filled"
+          value={form.patientId}
+          onChange={(v) => setForm({ ...form, patientId: v || '' })}
+          data={patients.map((p: any) => ({ value: p.id, label: `${p.firstName} ${p.lastName} — ${p.mutuelle || 'CPAM'}` }))}
+          searchable
+        />
+
+        <Select
+          label={t.billing.ccamCodes}
+          placeholder={t.billing.addItem}
+          variant="filled"
+          value={ccamValue}
+          onChange={(v) => { if (v) addCcam(v) }}
+          data={CCAM_CODES.map(c => ({ value: c.code, label: `${c.code} · ${c.label} · ${c.price}€` }))}
+          searchable
+        />
+
+        {/* Items list */}
+        <Stack gap={6}>
+          {form.items.length === 0 ? (
+            <Text size="xs" c="dimmed" className="p-3 rounded glass-base text-center">
+              {t.billing.noItems}
+            </Text>
+          ) : (
+            form.items.map((item, idx) => (
+              <div key={idx} className="flex items-center gap-2 p-2 rounded-lg glass-base">
+                <Badge variant="outline" size="sm" className="font-mono">{item.code}</Badge>
+                <Text size="xs" className="flex-1 truncate">{item.description}</Text>
+                <Text size="xs" className="font-mono tabular-nums">{item.unitPrice.toFixed(2)}€</Text>
+                <button onClick={() => removeItem(idx)} className="text-destructive hover:text-destructive/80 text-xs">×</button>
+              </div>
+            ))
+          )}
+        </Stack>
+
+        <div className="p-3 rounded-lg glass-base">
+          <Checkbox
+            checked={form.tiersPayant}
+            onChange={(e) => setForm({ ...form, tiersPayant: e.currentTarget.checked })}
+            label={
+              <Group gap={4}>
+                <Building2 className="w-3 h-3" />
+                <Text size="xs">{t.billing.tiersPayant} (CPAM 70%)</Text>
+              </Group>
+            }
+          />
+        </div>
+
+        <div className="p-3 rounded-lg glass-base space-y-1.5">
+          <div className="flex justify-between text-xs">
+            <span className="text-muted-foreground">{t.billing.subtotal}</span>
+            <span className="font-mono tabular-nums">{formatCurrency(total, locale)}</span>
           </div>
-
-          <div className="space-y-1.5 col-span-2">
-            <Label>{t.billing.ccamCodes}</Label>
-            <Select value="" onValueChange={addCcam}>
-              <SelectTrigger><SelectValue placeholder={t.billing.addItem} /></SelectTrigger>
-              <SelectContent className="glass-floating max-h-72">
-                {CCAM_CODES.map(c => (
-                  <SelectItem key={c.code} value={c.code}>{c.code} · {c.label} · {c.price}€</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Items list */}
-          <div className="col-span-2 space-y-1.5">
-            {form.items.length === 0 ? (
-              <p className="text-xs text-muted-foreground p-3 rounded glass-base text-center">
-                {t.billing.noItems}
-              </p>
-            ) : (
-              form.items.map((item, idx) => (
-                <div key={idx} className="flex items-center gap-2 p-2 rounded-lg glass-base">
-                  <Badge variant="outline" className="font-mono text-[10px]">{item.code}</Badge>
-                  <span className="text-xs flex-1 truncate">{item.description}</span>
-                  <span className="text-xs font-mono tabular-nums">{item.unitPrice.toFixed(2)}€</span>
-                  <button onClick={() => removeItem(idx)} className="text-destructive hover:text-destructive/80 text-xs">×</button>
-                </div>
-              ))
-            )}
-          </div>
-
-          <div className="col-span-2 flex items-center gap-2 p-3 rounded-lg glass-base">
-            <input
-              type="checkbox"
-              id="tiersPayant"
-              checked={form.tiersPayant}
-              onChange={(e) => setForm({ ...form, tiersPayant: e.target.checked })}
-              className="w-4 h-4"
-            />
-            <Label htmlFor="tiersPayant" className="text-xs cursor-pointer flex items-center gap-1">
-              <Building2 className="w-3 h-3" />
-              {t.billing.tiersPayant} (CPAM 70%)
-            </Label>
-          </div>
-
-          <div className="col-span-2 p-3 rounded-lg glass-base space-y-1.5">
-            <div className="flex justify-between text-xs">
-              <span className="text-muted-foreground">{t.billing.subtotal}</span>
-              <span className="font-mono tabular-nums">{formatCurrency(total, locale)}</span>
-            </div>
-            {form.tiersPayant && (
-              <>
-                <div className="flex justify-between text-xs">
-                  <span className="text-muted-foreground">{t.billing.insurance} (70%)</span>
-                  <span className="font-mono tabular-nums text-success">-{formatCurrency(total * 0.7, locale)}</span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-muted-foreground">{t.billing.patientShare} (30%)</span>
-                  <span className="font-mono tabular-nums">{formatCurrency(total * 0.3, locale)}</span>
-                </div>
-              </>
-            )}
-            <div className="flex justify-between text-sm font-semibold pt-1.5 border-t border-border/40">
-              <span>{t.billing.total}</span>
-              <span className="font-mono tabular-nums">{formatCurrency(total, locale)}</span>
-            </div>
+          {form.tiersPayant && (
+            <>
+              <div className="flex justify-between text-xs">
+                <span className="text-muted-foreground">{t.billing.insurance} (70%)</span>
+                <span className="font-mono tabular-nums text-success">-{formatCurrency(total * 0.7, locale)}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-muted-foreground">{t.billing.patientShare} (30%)</span>
+                <span className="font-mono tabular-nums">{formatCurrency(total * 0.3, locale)}</span>
+              </div>
+            </>
+          )}
+          <div className="flex justify-between text-sm font-semibold pt-1.5 border-t border-border/40">
+            <span>{t.billing.total}</span>
+            <span className="font-mono tabular-nums">{formatCurrency(total, locale)}</span>
           </div>
         </div>
 
-        <DialogFooter>
+        <Group justify="flex-end" mt="sm">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
             {t.common.cancel}
           </Button>
-          <Button onClick={handleSubmit} disabled={submitting}>
-            {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+          <Button onClick={handleSubmit} loading={submitting} leftSection={submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}>
             {t.common.save}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </Group>
+      </Stack>
+    </Modal>
   )
 }

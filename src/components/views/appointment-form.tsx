@@ -1,18 +1,10 @@
 'use client'
 
 import { getDict, type Locale } from '@/lib/i18n'
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Button } from '@/components/ui/button'
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select'
+import { Modal, TextInput, Select, Button, Group, Stack } from '@mantine/core'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useState, useEffect } from 'react'
-import { toast } from 'sonner'
+import { useState } from 'react'
+import { notifications } from '@mantine/notifications'
 import { Loader2, CalendarPlus } from 'lucide-react'
 
 async function fetchPatients() {
@@ -67,7 +59,7 @@ export function AppointmentForm({ open, onOpenChange, locale }: { open: boolean;
 
   const handleSubmit = async () => {
     if (!form.patientId || !form.practitionerId) {
-      toast.error(t.common.patientPractitionerRequired)
+      notifications.show({ message: t.common.patientPractitionerRequired, color: 'red' })
       return
     }
     setSubmitting(true)
@@ -92,111 +84,126 @@ export function AppointmentForm({ open, onOpenChange, locale }: { open: boolean;
         const err = await res.json()
         throw new Error(err.error || 'Failed')
       }
-      const appt = await res.json()
-      toast.success(t.appointments.createdToast)
+      await res.json()
+      notifications.show({ message: t.appointments.createdToast, color: 'green' })
       qc.invalidateQueries({ queryKey: ['appointments'] })
       qc.invalidateQueries({ queryKey: ['dashboard'] })
       onOpenChange(false)
     } catch (e) {
-      toast.error((e as Error).message)
+      notifications.show({ message: (e as Error).message, color: 'red' })
     } finally {
       setSubmitting(false)
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="glass-floating max-w-xl">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <CalendarPlus className="w-5 h-5 text-primary" />
-            {t.appointments.new}
-          </DialogTitle>
-          <DialogDescription>{t.appointments.subtitle}</DialogDescription>
-        </DialogHeader>
+    <Modal
+      opened={open}
+      onClose={() => handleOpenChange(false)}
+      title={
+        <Group gap="sm">
+          <CalendarPlus className="w-5 h-5 text-primary" />
+          <span>{t.appointments.new}</span>
+        </Group>
+      }
+      size="xl"
+    >
+      <Stack gap="xs">
+        <Select
+          label={`${t.appointments.patient} *`}
+          placeholder={t.common.select}
+          variant="filled"
+          value={form.patientId}
+          onChange={(v) => setForm({ ...form, patientId: v || '' })}
+          data={(patientsData?.items || []).map((p: any) => ({
+            value: p.id,
+            label: `${p.firstName} ${p.lastName} ${p.birthDate ? `(${new Date(p.birthDate).getFullYear()})` : ''}`,
+          }))}
+          searchable
+        />
 
-        <div className="grid grid-cols-2 gap-3 py-2">
-          <div className="space-y-1.5 col-span-2">
-            <Label>{t.appointments.patient} *</Label>
-            <Select value={form.patientId} onValueChange={(v) => setForm({ ...form, patientId: v })}>
-              <SelectTrigger><SelectValue placeholder={t.common.select} /></SelectTrigger>
-              <SelectContent className="glass-floating max-h-72">
-                {(patientsData?.items || []).map((p: any) => (
-                  <SelectItem key={p.id} value={p.id}>
-                    {p.firstName} {p.lastName} {p.birthDate ? `(${new Date(p.birthDate).getFullYear()})` : ''}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5 col-span-2">
-            <Label>{t.appointments.practitioner} *</Label>
-            <Select value={form.practitionerId} onValueChange={(v) => setForm({ ...form, practitionerId: v })}>
-              <SelectTrigger><SelectValue placeholder={t.common.select} /></SelectTrigger>
-              <SelectContent className="glass-floating max-h-72">
-                {(staffData?.practitioners || []).map((p: any) => (
-                  <SelectItem key={p.id} value={p.id}>{p.name} — {p.specialty}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <Label>{t.common.date}</Label>
-            <Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
-          </div>
-          <div className="space-y-1.5">
-            <Label>{t.common.time}</Label>
-            <Input type="time" value={form.time} onChange={(e) => setForm({ ...form, time: e.target.value })} />
-          </div>
-          <div className="space-y-1.5">
-            <Label>{t.common.duration} (min)</Label>
-            <Select value={form.duration} onValueChange={(v) => setForm({ ...form, duration: v })}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent className="glass-floating">
-                {[15, 30, 45, 60, 90].map(d => <SelectItem key={d} value={String(d)}>{d} min</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <Label>{t.common.type}</Label>
-            <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent className="glass-floating">
-                <SelectItem value="consultation">{t.appointments.types.consultation}</SelectItem>
-                <SelectItem value="follow_up">{t.appointments.types.follow_up}</SelectItem>
-                <SelectItem value="telemedicine">{t.appointments.types.telemedicine}</SelectItem>
-                <SelectItem value="procedure">{t.appointments.types.procedure}</SelectItem>
-                <SelectItem value="walk_in">{t.appointments.types.walk_in}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5 col-span-2">
-            <Label>{t.appointments.resource}</Label>
-            <Select value={form.resourceId} onValueChange={(v) => setForm({ ...form, resourceId: v })}>
-              <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-              <SelectContent className="glass-floating">
-                {(resData?.resources || []).map((r: any) => (
-                  <SelectItem key={r.id} value={r.id}>{r.name} ({r.type})</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5 col-span-2">
-            <Label htmlFor="reason">{t.appointments.reason}</Label>
-            <Input id="reason" value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} />
-          </div>
-        </div>
+        <Select
+          label={`${t.appointments.practitioner} *`}
+          placeholder={t.common.select}
+          variant="filled"
+          value={form.practitionerId}
+          onChange={(v) => setForm({ ...form, practitionerId: v || '' })}
+          data={(staffData?.practitioners || []).map((p: any) => ({
+            value: p.id,
+            label: `${p.name} — ${p.specialty}`,
+          }))}
+          searchable
+        />
 
-        <DialogFooter>
+        <Group grow>
+          <TextInput
+            type="date"
+            label={t.common.date}
+            variant="filled"
+            value={form.date}
+            onChange={(e) => setForm({ ...form, date: e.target.value })}
+          />
+          <TextInput
+            type="time"
+            label={t.common.time}
+            variant="filled"
+            value={form.time}
+            onChange={(e) => setForm({ ...form, time: e.target.value })}
+          />
+        </Group>
+
+        <Group grow>
+          <Select
+            label={`${t.common.duration} (min)`}
+            variant="filled"
+            value={form.duration}
+            onChange={(v) => setForm({ ...form, duration: v || '30' })}
+            data={[15, 30, 45, 60, 90].map(d => ({ value: String(d), label: `${d} min` }))}
+          />
+          <Select
+            label={t.common.type}
+            variant="filled"
+            value={form.type}
+            onChange={(v) => setForm({ ...form, type: v || 'consultation' })}
+            data={[
+              { value: 'consultation', label: t.appointments.types.consultation },
+              { value: 'follow_up', label: t.appointments.types.follow_up },
+              { value: 'telemedicine', label: t.appointments.types.telemedicine },
+              { value: 'procedure', label: t.appointments.types.procedure },
+              { value: 'walk_in', label: t.appointments.types.walk_in },
+            ]}
+          />
+        </Group>
+
+        <Select
+          label={t.appointments.resource}
+          placeholder="—"
+          variant="filled"
+          value={form.resourceId}
+          onChange={(v) => setForm({ ...form, resourceId: v || '' })}
+          data={(resData?.resources || []).map((r: any) => ({
+            value: r.id,
+            label: `${r.name} (${r.type})`,
+          }))}
+          clearable
+        />
+
+        <TextInput
+          label={t.appointments.reason}
+          variant="filled"
+          value={form.reason}
+          onChange={(e) => setForm({ ...form, reason: e.target.value })}
+        />
+
+        <Group justify="flex-end" mt="sm">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
             {t.common.cancel}
           </Button>
-          <Button onClick={handleSubmit} disabled={submitting}>
-            {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+          <Button onClick={handleSubmit} loading={submitting} leftSection={submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}>
             {t.common.save}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </Group>
+      </Stack>
+    </Modal>
   )
 }

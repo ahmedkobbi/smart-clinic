@@ -8,12 +8,7 @@ import {
   Package, AlertTriangle, Calendar, DollarSign, Boxes, Pill, Stethoscope,
 } from 'lucide-react'
 import { useState } from 'react'
-import { Input } from '@/components/ui/input'
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Badge } from '@/components/ui/badge'
+import { TextInput, Select, ScrollArea, Badge, Group } from '@mantine/core'
 
 async function fetchInventory() {
   const res = await fetch('/api/inventory', { cache: 'no-store' })
@@ -70,25 +65,27 @@ export function InventoryView({ locale }: { locale: Locale }) {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col md:flex-row gap-3">
-        <Input
+      <Group gap="sm" className="flex flex-col md:flex-row">
+        <TextInput
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder={t.inventory.searchPlaceholder}
-          className="glass-base border-0 md:flex-1"
+          variant="filled"
+          className="flex-1"
         />
-        <Select value={category} onValueChange={setCategory}>
-          <SelectTrigger className="w-full md:w-48 glass-base border-0">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent className="glass-floating">
-            <SelectItem value="all">{t.common.allCategories}</SelectItem>
-            <SelectItem value="consumable">{t.inventory.categories.consumable}</SelectItem>
-            <SelectItem value="medication">{t.inventory.categories.medication}</SelectItem>
-            <SelectItem value="equipment">{t.inventory.categories.equipment}</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+        <Select
+          value={category}
+          onChange={(v) => setCategory(v || 'all')}
+          data={[
+            { value: 'all', label: t.common.allCategories },
+            { value: 'consumable', label: t.inventory.categories.consumable },
+            { value: 'medication', label: t.inventory.categories.medication },
+            { value: 'equipment', label: t.inventory.categories.equipment },
+          ]}
+          variant="filled"
+          w={{ base: '100%', md: 200 }}
+        />
+      </Group>
 
       {/* Inventory table */}
       <div className="glass-card rounded-2xl overflow-hidden">
@@ -99,7 +96,7 @@ export function InventoryView({ locale }: { locale: Locale }) {
           <div className="col-span-2 hidden md:block">{t.inventory.expiry}</div>
           <div className="col-span-3 md:col-span-2 text-right">{t.inventory.unitPrice}</div>
         </div>
-        <ScrollArea className="h-[60vh]">
+        <ScrollArea h="60vh">
           {isLoading ? (
             <div className="p-8 text-center text-sm text-muted-foreground">{t.common.loading}</div>
           ) : filtered.length === 0 ? (
@@ -131,7 +128,7 @@ export function InventoryView({ locale }: { locale: Locale }) {
                     </div>
                   </div>
                   <div className="col-span-2 hidden md:flex items-center">
-                    <Badge variant="outline" className="text-[10px]">
+                    <Badge variant="outline" size="sm">
                       {t.inventory.categories[item.category as keyof typeof t.inventory.categories]}
                     </Badge>
                   </div>
@@ -140,7 +137,7 @@ export function InventoryView({ locale }: { locale: Locale }) {
                       {item.stock}
                     </span>
                     {isLow && (
-                      <Badge variant="destructive" className="text-[9px]">
+                      <Badge color="red" variant="filled" size="sm">
                         {t.inventory.lowStock}
                       </Badge>
                     )}

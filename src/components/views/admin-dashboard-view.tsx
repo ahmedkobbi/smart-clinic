@@ -8,10 +8,7 @@ import {
   KeyRound, Monitor, Activity, DollarSign, TrendingUp,
   AlertTriangle, CheckCircle2, Cpu, Zap, Clock,
 } from 'lucide-react'
-import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
-  PieChart, Pie, Cell, Area, AreaChart,
-} from 'recharts'
+import { AreaChart, BarChart, DonutChart } from '@mantine/charts'
 import { SkeletonCard } from '@/components/common/skeleton'
 import { LiveIndicator } from '@/components/common/live-indicator'
 import { AnimatedNumber } from '@/components/common/animated-number'
@@ -170,29 +167,33 @@ export function AdminDashboardView({ locale }: { locale: Locale }) {
             </div>
             <Activity className="w-4 h-4 text-muted-foreground" />
           </div>
-          <ResponsiveContainer width="100%" height={200}>
-            <AreaChart data={data.dailyActive} margin={{ top: 4, right: 4, left: -16, bottom: 0 }}>
-              <defs>
-                <linearGradient id="activeGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.3} />
-                  <stop offset="100%" stopColor="var(--primary)" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.5 0.02 250 / 0.15)" vertical={false} />
-              <XAxis dataKey="date" tick={{ fontSize: 11 }} stroke="oklch(0.5 0.02 250 / 0.6)" tickFormatter={(d) => formatDate(d as string, locale)} />
-              <YAxis tick={{ fontSize: 11 }} stroke="oklch(0.5 0.02 250 / 0.6)" />
-              <Tooltip
-                contentStyle={{
-                  background: 'var(--glass-floating-bg)',
-                  backdropFilter: 'blur(20px)',
-                  border: '1px solid var(--glass-floating-border)',
-                  borderRadius: 12,
-                  fontSize: 12,
-                }}
-              />
-              <Area type="monotone" dataKey="count" stroke="var(--primary)" strokeWidth={2} fill="url(#activeGrad)" />
-            </AreaChart>
-          </ResponsiveContainer>
+          <AreaChart
+            h={200}
+            data={data.dailyActive}
+            dataKey="date"
+            series={[{ name: 'count', color: 'var(--primary)' }]}
+            xAxisProps={{ tick: { fontSize: 11 }, tickFormatter: (value: any) => formatDate(String(value), locale) }}
+            yAxisProps={{ tick: { fontSize: 11 } }}
+            gridProps={{ strokeDasharray: '3 3', vertical: false }}
+            tooltipProps={{
+              content: ({ label, payload }: any) =>
+                payload && payload.length > 0 ? (
+                  <div
+                    style={{
+                      background: 'var(--glass-floating-bg)',
+                      backdropFilter: 'blur(20px)',
+                      border: '1px solid var(--glass-floating-border)',
+                      borderRadius: 12,
+                      fontSize: 12,
+                      padding: 8,
+                    }}
+                  >
+                    <p style={{ opacity: 0.7 }}>{formatDate(String(label), locale)}</p>
+                    <p style={{ color: 'var(--primary)' }}>{payload[0]?.value}</p>
+                  </div>
+                ) : null,
+            }}
+          />
         </motion.div>
       </section>
 
@@ -207,22 +208,12 @@ export function AdminDashboardView({ locale }: { locale: Locale }) {
         >
           <h3 className="text-sm font-semibold mb-4">{t.admin.overview.byPlan}</h3>
           {planData.length > 0 && (
-            <ResponsiveContainer width="100%" height={180}>
-              <PieChart>
-                <Pie data={planData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={40} outerRadius={70} paddingAngle={2}>
-                  {planData.map((entry: any, i: number) => <Cell key={i} fill={entry.color} />)}
-                </Pie>
-                <Tooltip
-                  contentStyle={{
-                    background: 'var(--glass-floating-bg)',
-                    backdropFilter: 'blur(20px)',
-                    border: '1px solid var(--glass-floating-border)',
-                    borderRadius: 12,
-                    fontSize: 12,
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
+            <DonutChart
+              h={180}
+              data={planData}
+              thickness={30}
+              strokeWidth={1}
+            />
           )}
           <div className="grid grid-cols-2 gap-1 mt-2">
             {planData.map((p: any, i: number) => (
@@ -244,22 +235,12 @@ export function AdminDashboardView({ locale }: { locale: Locale }) {
         >
           <h3 className="text-sm font-semibold mb-4">{t.admin.overview.byStatus}</h3>
           {statusData.length > 0 && (
-            <ResponsiveContainer width="100%" height={180}>
-              <PieChart>
-                <Pie data={statusData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={40} outerRadius={70} paddingAngle={2}>
-                  {statusData.map((entry: any, i: number) => <Cell key={i} fill={entry.color} />)}
-                </Pie>
-                <Tooltip
-                  contentStyle={{
-                    background: 'var(--glass-floating-bg)',
-                    backdropFilter: 'blur(20px)',
-                    border: '1px solid var(--glass-floating-border)',
-                    borderRadius: 12,
-                    fontSize: 12,
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
+            <DonutChart
+              h={180}
+              data={statusData}
+              thickness={30}
+              strokeWidth={1}
+            />
           )}
           <div className="grid grid-cols-2 gap-1 mt-2">
             {statusData.map((s: any, i: number) => (
@@ -280,23 +261,34 @@ export function AdminDashboardView({ locale }: { locale: Locale }) {
           className="glass-card rounded-2xl p-5"
         >
           <h3 className="text-sm font-semibold mb-4">{t.admin.overview.telemetry7d}</h3>
-          <ResponsiveContainer width="100%" height={180}>
-            <BarChart data={telemetryData} margin={{ top: 4, right: 4, left: -16, bottom: 0 }} layout="vertical">
-              <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.5 0.02 250 / 0.15)" horizontal={false} />
-              <XAxis type="number" tick={{ fontSize: 10 }} stroke="oklch(0.5 0.02 250 / 0.6)" />
-              <YAxis type="category" dataKey="name" tick={{ fontSize: 10 }} stroke="oklch(0.5 0.02 250 / 0.6)" width={80} />
-              <Tooltip
-                contentStyle={{
-                  background: 'var(--glass-floating-bg)',
-                  backdropFilter: 'blur(20px)',
-                  border: '1px solid var(--glass-floating-border)',
-                  borderRadius: 12,
-                  fontSize: 12,
-                }}
-              />
-              <Bar dataKey="count" fill="var(--glass-accent)" radius={[0, 4, 4, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          <BarChart
+            h={180}
+            data={telemetryData}
+            dataKey="name"
+            series={[{ name: 'count', color: 'var(--glass-accent)' }]}
+            orientation="vertical"
+            xAxisProps={{ tick: { fontSize: 10 } }}
+            yAxisProps={{ tick: { fontSize: 10 }, width: 80 }}
+            gridProps={{ strokeDasharray: '3 3', horizontal: false }}
+            tooltipProps={{
+              content: ({ label, payload }: any) =>
+                payload && payload.length > 0 ? (
+                  <div
+                    style={{
+                      background: 'var(--glass-floating-bg)',
+                      backdropFilter: 'blur(20px)',
+                      border: '1px solid var(--glass-floating-border)',
+                      borderRadius: 12,
+                      fontSize: 12,
+                      padding: 8,
+                    }}
+                  >
+                    <p style={{ fontWeight: 500 }}>{label}</p>
+                    <p style={{ color: 'var(--glass-accent)' }}>{payload[0]?.value}</p>
+                  </div>
+                ) : null,
+            }}
+          />
         </motion.div>
       </section>
 

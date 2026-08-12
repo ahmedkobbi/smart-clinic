@@ -3,15 +3,22 @@
 import { MantineProvider } from '@mantine/core'
 import { Notifications } from '@mantine/notifications'
 import { ModalsProvider } from '@mantine/modals'
+import { SpotlightProvider } from '@mantine/spotlight'
 import { mantineTheme } from '@/lib/mantine-theme'
 
 export function MantineProviderWrapper({ children }: { children: React.ReactNode }) {
   return (
     <MantineProvider theme={mantineTheme} defaultColorScheme="auto">
-      <ModalsProvider>
-        <Notifications position="top-right" />
-        {children}
-      </ModalsProvider>
+      <SpotlightProvider
+        shortcut={['mod + k', 'ctrl + k']}
+        highlightQuery
+        limit={10}
+      >
+        <ModalsProvider>
+          <Notifications position="top-right" zIndex={9999} />
+          {children}
+        </ModalsProvider>
+      </SpotlightProvider>
     </MantineProvider>
   )
 }

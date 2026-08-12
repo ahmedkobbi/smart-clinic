@@ -1,17 +1,11 @@
 'use client'
 
 import { getDict, type Locale } from '@/lib/i18n'
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Button } from '@/components/ui/button'
+import { Modal, TextInput, Textarea, Select, Autocomplete, Button, Checkbox, Group, Stack, Grid, Text, Box } from '@mantine/core'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useState } from 'react'
 import { Loader2, Pill, AlertTriangle, Sparkles } from 'lucide-react'
-import { toast } from 'sonner'
+import { notifications } from '@mantine/notifications'
 
 const COMMON_MEDS = [
   'Doliprane 1000mg (paracétamol)',
@@ -91,11 +85,11 @@ export function PrescriptionForm({
 
   const handleSubmit = async () => {
     if (!form.practitionerId || !form.medication) {
-      toast.error(t.prescriptions.practitionerMedicationRequiredToast)
+      notifications.show({ message: t.prescriptions.practitionerMedicationRequiredToast, color: 'red' })
       return
     }
     if (hasSevereWarning && !overrideConfirm) {
-      toast.error(t.prescriptions.severeAllergyConfirmToast)
+      notifications.show({ message: t.prescriptions.severeAllergyConfirmToast, color: 'red' })
       return
     }
     setSubmitting(true)
@@ -110,9 +104,9 @@ export function PrescriptionForm({
         }),
       })
       if (!res.ok) throw new Error('Failed')
-      toast.success(t.prescriptions.createdToast)
+      notifications.show({ message: t.prescriptions.createdToast, color: 'green' })
       if (warnings.length > 0) {
-        toast.warning(t.prescriptions.allergyOverrideLoggedToast)
+        notifications.show({ message: t.prescriptions.allergyOverrideLoggedToast, color: 'yellow' })
       }
       onSuccess()
       onOpenChange(false)
@@ -120,33 +114,35 @@ export function PrescriptionForm({
       setWarnings([])
       setOverrideConfirm(false)
     } catch (e) {
-      toast.error((e as Error).message)
+      notifications.show({ message: (e as Error).message, color: 'red' })
     } finally {
       setSubmitting(false)
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="glass-floating max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Pill className="w-5 h-5 text-primary" />
-            {t.prescriptions.new}
-          </DialogTitle>
-          <DialogDescription>
-            {t.prescriptions.allergyCheck}
-          </DialogDescription>
-        </DialogHeader>
+    <Modal
+      opened={open}
+      onClose={() => onOpenChange(false)}
+      size="lg"
+      title={
+        <Group gap="sm">
+          <Pill className="w-5 h-5 text-primary" />
+          <span>{t.prescriptions.new}</span>
+        </Group>
+      }
+    >
+      <Stack gap="sm">
+        <Text size="xs" c="dimmed">{t.prescriptions.allergyCheck}</Text>
 
         {/* Patient allergies display */}
         {patientAllergies.length > 0 && (
-          <div className="p-3 rounded-lg bg-destructive/5 border border-destructive/20">
-            <p className="text-[10px] uppercase font-semibold text-destructive mb-1.5 flex items-center gap-1">
+          <Box p="sm" className="rounded-lg bg-destructive/5 border border-destructive/20">
+            <Text size="xs" className="uppercase font-semibold text-destructive mb-1.5 flex items-center gap-1">
               <AlertTriangle className="w-3 h-3" />
               {t.prescriptions.knownAllergies}
-            </p>
-            <div className="flex flex-wrap gap-1.5">
+            </Text>
+            <Group gap={6}>
               {patientAllergies.map((a, i) => (
                 <span
                   key={i}
@@ -159,45 +155,38 @@ export function PrescriptionForm({
                   {a.substance} ({a.severity})
                 </span>
               ))}
-            </div>
-          </div>
+            </Group>
+          </Box>
         )}
 
-        <div className="grid grid-cols-2 gap-3 py-2">
-          <div className="space-y-1.5 col-span-2">
-            <Label>{t.appointments.practitioner} *</Label>
-            <select
-              value={form.practitionerId}
-              onChange={(e) => setForm({ ...form, practitionerId: e.target.value })}
-              className="w-full h-10 px-3 rounded-md glass-base border-0 text-sm"
-            >
-              <option value="">—</option>
-              {practitioners.map((p: any) => (
-                <option key={p.id} value={p.id}>{p.name} — {p.specialty}</option>
-              ))}
-            </select>
-          </div>
+        <Stack gap="sm">
+          <Select
+            label={`${t.appointments.practitioner} *`}
+            variant="filled"
+            value={form.practitionerId}
+            onChange={(v) => setForm({ ...form, practitionerId: v || '' })}
+            data={practitioners.map((p: any) => ({ value: p.id, label: `${p.name} — ${p.specialty}` }))}
+            placeholder="—"
+            searchable
+          />
 
-          <div className="space-y-1.5 col-span-2">
-            <Label>{t.prescriptions.medication} *</Label>
-            <Input
+          <div>
+            <Autocomplete
+              label={`${t.prescriptions.medication} *`}
+              variant="filled"
               value={form.medication}
-              onChange={(e) => {
-                setForm({ ...form, medication: e.target.value })
-                checkInteractions(e.target.value)
+              onChange={(v) => {
+                setForm({ ...form, medication: v })
+                checkInteractions(v)
               }}
-              list="meds-list"
+              data={COMMON_MEDS}
               placeholder={t.prescriptions.medicationPlaceholder}
-              className="glass-base border-0"
             />
-            <datalist id="meds-list">
-              {COMMON_MEDS.map(m => <option key={m} value={m} />)}
-            </datalist>
             {checking && (
-              <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+              <Text size="xs" c="dimmed" className="flex items-center gap-1 mt-1">
                 <Loader2 className="w-3 h-3 animate-spin" />
                 {t.prescriptions.checkingAllergies}
-              </p>
+              </Text>
             )}
           </div>
 
@@ -208,7 +197,7 @@ export function PrescriptionForm({
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                className="col-span-2 space-y-2"
+                className="space-y-2"
               >
                 {warnings.map((w, i) => (
                   <div
@@ -224,67 +213,93 @@ export function PrescriptionForm({
                       w.severity === 'moderate' ? 'text-warning' : 'text-info'
                     }`} />
                     <div className="flex-1">
-                      <p className="text-xs font-medium">{w.message}</p>
+                      <Text size="xs" fw={500}>{w.message}</Text>
                     </div>
                   </div>
                 ))}
                 {hasSevereWarning && (
                   <div className="p-3 rounded-lg bg-destructive/5 border border-destructive/30 flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id="override"
+                    <Checkbox
                       checked={overrideConfirm}
-                      onChange={(e) => setOverrideConfirm(e.target.checked)}
-                      className="w-4 h-4"
+                      onChange={(e) => setOverrideConfirm(e.currentTarget.checked)}
+                      label={t.prescriptions.overrideConfirm}
+                      size="xs"
                     />
-                    <label htmlFor="override" className="text-xs flex-1">
-                      {t.prescriptions.overrideConfirm}
-                    </label>
                   </div>
                 )}
               </motion.div>
             )}
           </AnimatePresence>
 
-          <div className="space-y-1.5">
-            <Label>{t.prescriptions.dosage}</Label>
-            <Input value={form.dosage} onChange={(e) => setForm({ ...form, dosage: e.target.value })} placeholder="500 mg" className="glass-base border-0" />
-          </div>
-          <div className="space-y-1.5">
-            <Label>{t.prescriptions.frequency}</Label>
-            <Input value={form.frequency} onChange={(e) => setForm({ ...form, frequency: e.target.value })} placeholder="3x/jour" className="glass-base border-0" />
-          </div>
-          <div className="space-y-1.5">
-            <Label>{t.common.duration}</Label>
-            <Input value={form.duration} onChange={(e) => setForm({ ...form, duration: e.target.value })} placeholder="7 jours" className="glass-base border-0" />
-          </div>
-          <div className="space-y-1.5">
-            <Label>{t.prescriptions.quantity}</Label>
-            <Input type="number" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} placeholder="21" className="glass-base border-0" />
-          </div>
-          <div className="space-y-1.5 col-span-2">
-            <Label>{t.prescriptions.instructions}</Label>
-            <Textarea rows={2} value={form.instructions} onChange={(e) => setForm({ ...form, instructions: e.target.value })} className="glass-base border-0" />
-          </div>
-        </div>
+          <Grid gap="sm">
+            <Grid.Col span={{ base: 12, sm: 6 }}>
+              <TextInput
+                label={t.prescriptions.dosage}
+                variant="filled"
+                value={form.dosage}
+                onChange={(e) => setForm({ ...form, dosage: e.target.value })}
+                placeholder="500 mg"
+              />
+            </Grid.Col>
+            <Grid.Col span={{ base: 12, sm: 6 }}>
+              <TextInput
+                label={t.prescriptions.frequency}
+                variant="filled"
+                value={form.frequency}
+                onChange={(e) => setForm({ ...form, frequency: e.target.value })}
+                placeholder="3x/jour"
+              />
+            </Grid.Col>
+            <Grid.Col span={{ base: 12, sm: 6 }}>
+              <TextInput
+                label={t.common.duration}
+                variant="filled"
+                value={form.duration}
+                onChange={(e) => setForm({ ...form, duration: e.target.value })}
+                placeholder="7 jours"
+              />
+            </Grid.Col>
+            <Grid.Col span={{ base: 12, sm: 6 }}>
+              <TextInput
+                type="number"
+                label={t.prescriptions.quantity}
+                variant="filled"
+                value={form.quantity}
+                onChange={(e) => setForm({ ...form, quantity: e.target.value })}
+                placeholder="21"
+              />
+            </Grid.Col>
+            <Grid.Col span={12}>
+              <Textarea
+                label={t.prescriptions.instructions}
+                variant="filled"
+                autosize
+                minRows={2}
+                value={form.instructions}
+                onChange={(e) => setForm({ ...form, instructions: e.target.value })}
+              />
+            </Grid.Col>
+          </Grid>
+        </Stack>
 
-        <DialogFooter className="flex items-center justify-between">
-          <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+        <Group justify="space-between" mt="sm">
+          <Text size="xs" c="dimmed" className="flex items-center gap-1">
             <Sparkles className="w-3 h-3 text-glass-accent" />
             {t.prescriptions.allergyCheckActive}
-          </p>
-          <div className="flex gap-2">
+          </Text>
+          <Group gap="sm">
             <Button variant="outline" onClick={() => onOpenChange(false)}>{t.common.cancel}</Button>
             <Button
               onClick={handleSubmit}
-              disabled={submitting || (hasSevereWarning && !overrideConfirm)}
+              loading={submitting}
+              disabled={hasSevereWarning && !overrideConfirm}
+              leftSection={submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
             >
-              {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               {t.common.save}
             </Button>
-          </div>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          </Group>
+        </Group>
+      </Stack>
+    </Modal>
   )
 }

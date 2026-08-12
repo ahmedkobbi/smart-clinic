@@ -9,11 +9,7 @@ import {
   GraduationCap, Stethoscope, Heart,
 } from 'lucide-react'
 import { useState } from 'react'
-import { Badge } from '@/components/ui/badge'
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select'
-import { ScrollArea } from '@/components/ui/scroll-area'
+import { Select, ScrollArea } from '@mantine/core'
 import { SkeletonList, SkeletonCard } from '@/components/common/skeleton'
 import { StatCard } from '@/components/common/stat-card'
 
@@ -142,17 +138,18 @@ export function StaffView({ locale }: { locale: Locale }) {
       <div>
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-semibold">{t.staff.credentialTracking}</h3>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-40 glass-base border-0 h-9">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="glass-floating">
-              <SelectItem value="all">{t.common.all}</SelectItem>
-              <SelectItem value="valid">{STATUS_CONFIG.valid.label[locale as 'fr' | 'en']}</SelectItem>
-              <SelectItem value="expiring_soon">{STATUS_CONFIG.expiring_soon.label[locale as 'fr' | 'en']}</SelectItem>
-              <SelectItem value="expired">{STATUS_CONFIG.expired.label[locale as 'fr' | 'en']}</SelectItem>
-            </SelectContent>
-          </Select>
+          <Select
+            value={statusFilter}
+            onChange={(v) => setStatusFilter(v || 'all')}
+            data={[
+              { value: 'all', label: t.common.all },
+              { value: 'valid', label: STATUS_CONFIG.valid.label[locale as 'fr' | 'en'] },
+              { value: 'expiring_soon', label: STATUS_CONFIG.expiring_soon.label[locale as 'fr' | 'en'] },
+              { value: 'expired', label: STATUS_CONFIG.expired.label[locale as 'fr' | 'en'] },
+            ]}
+            variant="filled"
+            w={160}
+          />
         </div>
         <div className="glass-card rounded-2xl overflow-hidden">
           <div className="grid grid-cols-12 gap-3 px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground border-b border-border/40">
@@ -162,7 +159,7 @@ export function StaffView({ locale }: { locale: Locale }) {
             <div className="col-span-2 hidden md:block">{t.staff.expires}</div>
             <div className="col-span-3 md:col-span-2 text-right">{t.common.status}</div>
           </div>
-          <ScrollArea className="h-[40vh]">
+          <ScrollArea h="40vh">
             {isLoading ? (
               <SkeletonList rows={6} />
             ) : (

@@ -12,10 +12,7 @@ import {
   Users, CalendarClock, Receipt, TrendingDown, Activity,
   Clock, Sparkles, AlertTriangle, Package, ChevronRight,
 } from 'lucide-react'
-import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
-  LineChart, Line, PieChart, Pie, Cell, Area, AreaChart,
-} from 'recharts'
+import { BarChart, AreaChart, DonutChart } from '@mantine/charts'
 
 interface DashboardData {
   totalPatients: number
@@ -151,23 +148,34 @@ export function DashboardView({ locale }: { locale: Locale }) {
             </div>
             <Activity className="w-4 h-4 text-muted-foreground" />
           </div>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={weekData} margin={{ top: 4, right: 4, left: -16, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.5 0.02 250 / 0.15)" vertical={false} />
-              <XAxis dataKey="name" tick={{ fontSize: 11 }} stroke="oklch(0.5 0.02 250 / 0.6)" />
-              <YAxis tick={{ fontSize: 11 }} stroke="oklch(0.5 0.02 250 / 0.6)" />
-              <Tooltip
-                contentStyle={{
-                  background: 'var(--glass-floating-bg)',
-                  backdropFilter: 'blur(20px)',
-                  border: '1px solid var(--glass-floating-border)',
-                  borderRadius: 12,
-                  fontSize: 12,
-                }}
-              />
-              <Bar dataKey="count" fill="var(--primary)" radius={[6, 6, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          <BarChart
+            h={220}
+            data={weekData}
+            dataKey="name"
+            series={[{ name: 'count', color: 'var(--primary)' }]}
+            xAxisProps={{ tick: { fontSize: 11 } }}
+            yAxisProps={{ tick: { fontSize: 11 } }}
+            gridProps={{ strokeDasharray: '3 3', vertical: false }}
+            barChartProps={{ barCategoryGap: '20%' }}
+            tooltipProps={{
+              content: ({ label, payload }: any) =>
+                payload && payload.length > 0 ? (
+                  <div
+                    style={{
+                      background: 'var(--glass-floating-bg)',
+                      backdropFilter: 'blur(20px)',
+                      border: '1px solid var(--glass-floating-border)',
+                      borderRadius: 12,
+                      fontSize: 12,
+                      padding: 8,
+                    }}
+                  >
+                    <p style={{ fontWeight: 500 }}>{label}</p>
+                    <p style={{ color: 'var(--primary)' }}>{t.dashboard.charts.appointmentsWeek}: {payload[0]?.value}</p>
+                  </div>
+                ) : null,
+            }}
+          />
         </motion.div>
 
         {/* Specialty breakdown */}
@@ -181,33 +189,12 @@ export function DashboardView({ locale }: { locale: Locale }) {
             <h3 className="text-sm font-semibold">{t.dashboard.charts.specialtyBreakdown}</h3>
           </div>
           {specialtyData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={180}>
-              <PieChart>
-                <Pie
-                  data={specialtyData}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={40}
-                  outerRadius={70}
-                  paddingAngle={2}
-                >
-                  {specialtyData.map((entry, i) => (
-                    <Cell key={i} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={{
-                    background: 'var(--glass-floating-bg)',
-                    backdropFilter: 'blur(20px)',
-                    border: '1px solid var(--glass-floating-border)',
-                    borderRadius: 12,
-                    fontSize: 12,
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
+            <DonutChart
+              h={180}
+              data={specialtyData}
+              thickness={30}
+              strokeWidth={1}
+            />
           ) : (
             <div className="h-[180px] flex items-center justify-center text-sm text-muted-foreground">
               {t.common.loading}
@@ -239,36 +226,33 @@ export function DashboardView({ locale }: { locale: Locale }) {
             </div>
             <Receipt className="w-4 h-4 text-muted-foreground" />
           </div>
-          <ResponsiveContainer width="100%" height={200}>
-            <AreaChart data={revenueData} margin={{ top: 4, right: 4, left: -16, bottom: 0 }}>
-              <defs>
-                <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.3} />
-                  <stop offset="100%" stopColor="var(--primary)" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.5 0.02 250 / 0.15)" vertical={false} />
-              <XAxis dataKey="name" tick={{ fontSize: 11 }} stroke="oklch(0.5 0.02 250 / 0.6)" />
-              <YAxis tick={{ fontSize: 11 }} stroke="oklch(0.5 0.02 250 / 0.6)" tickFormatter={(v) => `${v}€`} />
-              <Tooltip
-                contentStyle={{
-                  background: 'var(--glass-floating-bg)',
-                  backdropFilter: 'blur(20px)',
-                  border: '1px solid var(--glass-floating-border)',
-                  borderRadius: 12,
-                  fontSize: 12,
-                }}
-                formatter={(v: any) => [formatCurrency(v as number, locale), t.billing.total]}
-              />
-              <Area
-                type="monotone"
-                dataKey="amount"
-                stroke="var(--primary)"
-                strokeWidth={2}
-                fill="url(#revGrad)"
-              />
-            </AreaChart>
-          </ResponsiveContainer>
+          <AreaChart
+            h={200}
+            data={revenueData}
+            dataKey="name"
+            series={[{ name: 'amount', color: 'var(--primary)' }]}
+            xAxisProps={{ tick: { fontSize: 11 } }}
+            yAxisProps={{ tick: { fontSize: 11 }, tickFormatter: (v: any) => `${v}€` }}
+            gridProps={{ strokeDasharray: '3 3', vertical: false }}
+            tooltipProps={{
+              content: ({ label, payload }: any) =>
+                payload && payload.length > 0 ? (
+                  <div
+                    style={{
+                      background: 'var(--glass-floating-bg)',
+                      backdropFilter: 'blur(20px)',
+                      border: '1px solid var(--glass-floating-border)',
+                      borderRadius: 12,
+                      fontSize: 12,
+                      padding: 8,
+                    }}
+                  >
+                    <p style={{ fontWeight: 500 }}>{label}</p>
+                    <p style={{ color: 'var(--primary)' }}>{t.billing.total}: {formatCurrency(payload[0]?.value, locale)}</p>
+                  </div>
+                ) : null,
+            }}
+          />
         </motion.div>
 
         {/* No-show risk distribution */}

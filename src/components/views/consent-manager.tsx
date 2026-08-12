@@ -7,20 +7,11 @@ import {
   ShieldCheck, ShieldAlert, Plus, Loader2, Check, X, Clock,
 } from 'lucide-react'
 import { useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select'
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
-} from '@/components/ui/dialog'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
+import { Button, Select, Modal, Stack, Textarea, Group } from '@mantine/core'
 import { StatusPill } from '@/components/common/status-pill'
 import { EmptyState } from '@/components/common/empty-state'
 import { SkeletonList } from '@/components/common/skeleton'
-import { toast } from 'sonner'
+import { notifications } from '@mantine/notifications'
 
 async function fetchConsents() {
   const res = await fetch('/api/consents', { cache: 'no-store' })
@@ -47,7 +38,7 @@ export function ConsentManager({ locale }: { locale: Locale }) {
   const { data: patientsData } = useQuery({ queryKey: ['patients-list'], queryFn: fetchPatients })
 
   // Group consents by patient
-  const byPatient = (data?.items || []).reduce((acc: Map<string, any[]>, c: any) => {
+  const byPatient: Map<string, any[]> = (data?.items || []).reduce((acc: Map<string, any[]>, c: any) => {
     const key = c.patientId
     if (!acc.has(key)) acc.set(key, [])
     acc.get(key)!.push(c)
@@ -79,8 +70,8 @@ export function ConsentManager({ locale }: { locale: Locale }) {
           <h3 className="text-sm font-semibold">{t.audit.consent}</h3>
           <p className="text-xs text-muted-foreground">{t.consent.intro}</p>
         </div>
-        <Button onClick={() => setDialogOpen(true)} size="sm" className="bg-primary text-primary-foreground">
-          <Plus className="w-3.5 h-3.5" /> {t.consent.new}
+        <Button onClick={() => setDialogOpen(true)} size="sm" leftSection={<Plus className="w-3.5 h-3.5" />}>
+          {t.consent.new}
         </Button>
       </div>
 
@@ -158,10 +149,10 @@ function ConsentRow({ consent: c, locale, t, onChanged }: any) {
         }),
       })
       if (!res.ok) throw new Error('Failed')
-      toast.success(t.consent.consentStatusToast.replace('{status}', newStatus === 'granted' ? t.consent.statuses.granted : t.consent.statuses.withdrawn))
+      notifications.show({ message: t.consent.consentStatusToast.replace('{status}', newStatus === 'granted' ? t.consent.statuses.granted : t.consent.statuses.withdrawn), color: 'green' })
       onChanged()
     } catch (e) {
-      toast.error((e as Error).message)
+      notifications.show({ message: (e as Error).message, color: 'red' })
     } finally {
       setUpdating(false)
     }
@@ -222,7 +213,7 @@ function ConsentForm({ open, onOpenChange, locale, patients, t, onSuccess }: any
         body: JSON.stringify({ patientId, type, status, notes }),
       })
       if (!res.ok) throw new Error('Failed')
-      toast.success(t.consent.savedToast)
+      notifications.show({ message: t.consent.savedToast, color: 'green' })
       onSuccess()
       onOpenChange(false)
       setPatientId('')
@@ -230,69 +221,67 @@ function ConsentForm({ open, onOpenChange, locale, patients, t, onSuccess }: any
       setStatus('granted')
       setNotes('')
     } catch (e) {
-      toast.error((e as Error).message)
+      notifications.show({ message: (e as Error).message, color: 'red' })
     } finally {
       setSubmitting(false)
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="glass-floating max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-primary" />
-            {t.consent.newConsent}
-          </DialogTitle>
-        </DialogHeader>
-        <div className="space-y-3 py-2">
-          <div className="space-y-1.5">
-            <Label>{t.billing.patient}</Label>
-            <Select value={patientId} onValueChange={setPatientId}>
-              <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-              <SelectContent className="glass-floating max-h-72">
-                {patients.map((p: any) => (
-                  <SelectItem key={p.id} value={p.id}>{p.firstName} {p.lastName}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <Label>{t.consent.consentType}</Label>
-            <Select value={type} onValueChange={setType}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent className="glass-floating">
-                {Object.entries(t.audit.consentTypes).map(([k, v]) => (
-                  <SelectItem key={k} value={k}>{v}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <Label>{t.common.status}</Label>
-            <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent className="glass-floating">
-                <SelectItem value="granted">{t.consent.statuses.granted}</SelectItem>
-                <SelectItem value="pending">{t.consent.statuses.pending}</SelectItem>
-                <SelectItem value="withdrawn">{t.consent.statuses.withdrawn}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <Label>{t.consent.notes}</Label>
-            <Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
-          </div>
-        </div>
-        <DialogFooter>
+    <Modal
+      opened={open}
+      onClose={() => onOpenChange(false)}
+      title={
+        <Group gap="sm">
+          <ShieldCheck className="w-4 h-4 text-primary" />
+          <span>{t.consent.newConsent}</span>
+        </Group>
+      }
+    >
+      <Stack gap="sm">
+        <Select
+          label={t.billing.patient}
+          placeholder="—"
+          variant="filled"
+          value={patientId}
+          onChange={(v) => setPatientId(v || '')}
+          data={patients.map((p: any) => ({ value: p.id, label: `${p.firstName} ${p.lastName}` }))}
+          searchable
+        />
+        <Select
+          label={t.consent.consentType}
+          variant="filled"
+          value={type}
+          onChange={(v) => setType(v || 'treatment')}
+          data={Object.entries(t.audit.consentTypes).map(([k, v]) => ({ value: k, label: v as string }))}
+        />
+        <Select
+          label={t.common.status}
+          variant="filled"
+          value={status}
+          onChange={(v) => setStatus(v || 'granted')}
+          data={[
+            { value: 'granted', label: t.consent.statuses.granted },
+            { value: 'pending', label: t.consent.statuses.pending },
+            { value: 'withdrawn', label: t.consent.statuses.withdrawn },
+          ]}
+        />
+        <Textarea
+          label={t.consent.notes}
+          variant="filled"
+          autosize
+          minRows={2}
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+        />
+        <Group justify="flex-end" mt="sm">
           <Button variant="outline" onClick={() => onOpenChange(false)}>{t.common.cancel}</Button>
-          <Button onClick={submit} disabled={submitting || !patientId}>
-            {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+          <Button onClick={submit} disabled={submitting || !patientId} loading={submitting}>
             {t.common.save}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </Group>
+      </Stack>
+    </Modal>
   )
 }
 

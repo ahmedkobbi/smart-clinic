@@ -1,18 +1,10 @@
 'use client'
 
 import { getDict, type Locale } from '@/lib/i18n'
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Button } from '@/components/ui/button'
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select'
+import { Modal, TextInput, Select, Button, Group, Stack, Grid } from '@mantine/core'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { toast } from 'sonner'
+import { notifications } from '@mantine/notifications'
 import { Loader2, UserPlus } from 'lucide-react'
 
 async function fetchBranches() {
@@ -47,7 +39,7 @@ export function PatientForm({ open, onOpenChange, locale }: { open: boolean; onO
 
   const handleSubmit = async () => {
     if (!form.firstName || !form.lastName) {
-      toast.error(t.patients.nameRequiredToast)
+      notifications.show({ message: t.patients.nameRequiredToast, color: 'red' })
       return
     }
     setSubmitting(true)
@@ -69,7 +61,7 @@ export function PatientForm({ open, onOpenChange, locale }: { open: boolean; onO
         throw new Error(err.error || 'Failed')
       }
       const patient = await res.json()
-      toast.success(`${t.patients.createdToast}: ${patient.firstName} ${patient.lastName}`)
+      notifications.show({ message: `${t.patients.createdToast}: ${patient.firstName} ${patient.lastName}`, color: 'green' })
       qc.invalidateQueries({ queryKey: ['patients'] })
       qc.invalidateQueries({ queryKey: ['dashboard'] })
       onOpenChange(false)
@@ -80,118 +72,175 @@ export function PatientForm({ open, onOpenChange, locale }: { open: boolean; onO
         ssn: '', mutuelle: '', bloodType: '', heightCm: '', weightKg: '', branchId: '',
       })
     } catch (e) {
-      toast.error((e as Error).message)
+      notifications.show({ message: (e as Error).message, color: 'red' })
     } finally {
       setSubmitting(false)
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="glass-floating max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <UserPlus className="w-5 h-5 text-primary" />
-            {t.patients.new}
-          </DialogTitle>
-          <DialogDescription>{t.patients.subtitle}</DialogDescription>
-        </DialogHeader>
+    <Modal
+      opened={open}
+      onClose={() => onOpenChange(false)}
+      size="lg"
+      title={
+        <Group gap="sm">
+          <UserPlus className="w-5 h-5 text-primary" />
+          <span>{t.patients.new}</span>
+        </Group>
+      }
+    >
+      <Stack gap="sm">
+        <Grid gap="sm">
+          <Grid.Col span={{ base: 12, sm: 6 }}>
+            <TextInput
+              label={`${t.common.name} *`}
+              variant="filled"
+              value={form.firstName}
+              onChange={(e) => setForm({ ...form, firstName: e.target.value })}
+            />
+          </Grid.Col>
+          <Grid.Col span={{ base: 12, sm: 6 }}>
+            <TextInput
+              label={`${t.patients.lastName} *`}
+              variant="filled"
+              value={form.lastName}
+              onChange={(e) => setForm({ ...form, lastName: e.target.value })}
+            />
+          </Grid.Col>
+          <Grid.Col span={{ base: 12, sm: 6 }}>
+            <TextInput
+              type="date"
+              label={t.patients.birthDate}
+              variant="filled"
+              value={form.birthDate}
+              onChange={(e) => setForm({ ...form, birthDate: e.target.value })}
+            />
+          </Grid.Col>
+          <Grid.Col span={{ base: 12, sm: 6 }}>
+            <Select
+              label={t.patients.sex}
+              variant="filled"
+              value={form.sex}
+              onChange={(v) => setForm({ ...form, sex: (v as any) || 'unknown' })}
+              data={[
+                { value: 'male', label: t.patients.sexes.male },
+                { value: 'female', label: t.patients.sexes.female },
+                { value: 'other', label: t.patients.sexes.other },
+                { value: 'unknown', label: t.patients.sexes.unknown },
+              ]}
+            />
+          </Grid.Col>
+          <Grid.Col span={{ base: 12, sm: 6 }}>
+            <TextInput
+              label={t.common.phone}
+              variant="filled"
+              value={form.phone}
+              onChange={(e) => setForm({ ...form, phone: e.target.value })}
+            />
+          </Grid.Col>
+          <Grid.Col span={{ base: 12, sm: 6 }}>
+            <TextInput
+              type="email"
+              label={t.common.email}
+              variant="filled"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+            />
+          </Grid.Col>
+          <Grid.Col span={12}>
+            <TextInput
+              label={t.common.address}
+              variant="filled"
+              value={form.addressLine}
+              onChange={(e) => setForm({ ...form, addressLine: e.target.value })}
+            />
+          </Grid.Col>
+          <Grid.Col span={{ base: 12, sm: 6 }}>
+            <TextInput
+              label={t.common.postalCode}
+              variant="filled"
+              value={form.postalCode}
+              onChange={(e) => setForm({ ...form, postalCode: e.target.value })}
+            />
+          </Grid.Col>
+          <Grid.Col span={{ base: 12, sm: 6 }}>
+            <TextInput
+              label={t.common.city}
+              variant="filled"
+              value={form.city}
+              onChange={(e) => setForm({ ...form, city: e.target.value })}
+            />
+          </Grid.Col>
+          <Grid.Col span={{ base: 12, sm: 6 }}>
+            <TextInput
+              label={t.patients.ssn}
+              variant="filled"
+              value={form.ssn}
+              onChange={(e) => setForm({ ...form, ssn: e.target.value })}
+              classNames={{ input: 'font-mono' }}
+            />
+          </Grid.Col>
+          <Grid.Col span={{ base: 12, sm: 6 }}>
+            <TextInput
+              label={t.patients.mutuelle}
+              variant="filled"
+              value={form.mutuelle}
+              onChange={(e) => setForm({ ...form, mutuelle: e.target.value })}
+            />
+          </Grid.Col>
+          <Grid.Col span={{ base: 12, sm: 6 }}>
+            <Select
+              label={t.patients.bloodType}
+              placeholder="—"
+              variant="filled"
+              value={form.bloodType}
+              onChange={(v) => setForm({ ...form, bloodType: v || '' })}
+              data={['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map(b => ({ value: b, label: b }))}
+              clearable
+            />
+          </Grid.Col>
+          <Grid.Col span={{ base: 12, sm: 6 }}>
+            <TextInput
+              type="number"
+              label={`${t.patients.height} (cm)`}
+              variant="filled"
+              value={form.heightCm}
+              onChange={(e) => setForm({ ...form, heightCm: e.target.value })}
+            />
+          </Grid.Col>
+          <Grid.Col span={{ base: 12, sm: 6 }}>
+            <TextInput
+              type="number"
+              step="0.1"
+              label={`${t.patients.weight} (kg)`}
+              variant="filled"
+              value={form.weightKg}
+              onChange={(e) => setForm({ ...form, weightKg: e.target.value })}
+            />
+          </Grid.Col>
+          <Grid.Col span={12}>
+            <Select
+              label={t.patients.branch}
+              placeholder={t.common.select}
+              variant="filled"
+              value={form.branchId}
+              onChange={(v) => setForm({ ...form, branchId: v || '' })}
+              data={(branchesData?.branches || []).map((b: any) => ({ value: b.id, label: b.name }))}
+              clearable
+            />
+          </Grid.Col>
+        </Grid>
 
-        <div className="grid grid-cols-2 gap-3 py-2">
-          <div className="space-y-1.5">
-            <Label htmlFor="firstName">{t.common.name} *</Label>
-            <Input id="firstName" value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="lastName">{t.patients.lastName} *</Label>
-            <Input id="lastName" value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="birthDate">{t.patients.birthDate}</Label>
-            <Input id="birthDate" type="date" value={form.birthDate} onChange={(e) => setForm({ ...form, birthDate: e.target.value })} />
-          </div>
-          <div className="space-y-1.5">
-            <Label>{t.patients.sex}</Label>
-            <Select value={form.sex} onValueChange={(v) => setForm({ ...form, sex: v as any })}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent className="glass-floating">
-                <SelectItem value="male">{t.patients.sexes.male}</SelectItem>
-                <SelectItem value="female">{t.patients.sexes.female}</SelectItem>
-                <SelectItem value="other">{t.patients.sexes.other}</SelectItem>
-                <SelectItem value="unknown">{t.patients.sexes.unknown}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="phone">{t.common.phone}</Label>
-            <Input id="phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="email">{t.common.email}</Label>
-            <Input id="email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-          </div>
-          <div className="space-y-1.5 col-span-2">
-            <Label htmlFor="address">{t.common.address}</Label>
-            <Input id="address" value={form.addressLine} onChange={(e) => setForm({ ...form, addressLine: e.target.value })} />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="postal">{t.common.postalCode}</Label>
-            <Input id="postal" value={form.postalCode} onChange={(e) => setForm({ ...form, postalCode: e.target.value })} />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="city">{t.common.city}</Label>
-            <Input id="city" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="ssn">{t.patients.ssn}</Label>
-            <Input id="ssn" value={form.ssn} onChange={(e) => setForm({ ...form, ssn: e.target.value })} className="font-mono" />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="mutuelle">{t.patients.mutuelle}</Label>
-            <Input id="mutuelle" value={form.mutuelle} onChange={(e) => setForm({ ...form, mutuelle: e.target.value })} />
-          </div>
-          <div className="space-y-1.5">
-            <Label>{t.patients.bloodType}</Label>
-            <Select value={form.bloodType} onValueChange={(v) => setForm({ ...form, bloodType: v })}>
-              <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-              <SelectContent className="glass-floating">
-                {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map(b => (
-                  <SelectItem key={b} value={b}>{b}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="height">{t.patients.height} (cm)</Label>
-            <Input id="height" type="number" value={form.heightCm} onChange={(e) => setForm({ ...form, heightCm: e.target.value })} />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="weight">{t.patients.weight} (kg)</Label>
-            <Input id="weight" type="number" step="0.1" value={form.weightKg} onChange={(e) => setForm({ ...form, weightKg: e.target.value })} />
-          </div>
-          <div className="space-y-1.5 col-span-2">
-            <Label>{t.patients.branch}</Label>
-            <Select value={form.branchId} onValueChange={(v) => setForm({ ...form, branchId: v })}>
-              <SelectTrigger><SelectValue placeholder={t.common.select} /></SelectTrigger>
-              <SelectContent className="glass-floating">
-                {(branchesData?.branches || []).map((b: any) => (
-                  <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        <DialogFooter>
+        <Group justify="flex-end" mt="sm">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
             {t.common.cancel}
           </Button>
-          <Button onClick={handleSubmit} disabled={submitting}>
-            {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+          <Button onClick={handleSubmit} loading={submitting} leftSection={submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}>
             {t.common.save}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </Group>
+      </Stack>
+    </Modal>
   )
 }

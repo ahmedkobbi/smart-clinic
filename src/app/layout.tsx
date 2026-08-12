@@ -4,8 +4,9 @@ import "./globals.css";
 import "@mantine/core/styles.css";
 import "@mantine/dates/styles.css";
 import "@mantine/notifications/styles.css";
+import "@mantine/spotlight/styles.css";
+import "@mantine/charts/styles.css";
 import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Providers } from "@/components/providers";
 import { MantineProviderWrapper } from "@/components/mantine-provider-wrapper";
 
@@ -62,7 +63,6 @@ export default function RootLayout({
           <Providers>
             {children}
             <Toaster />
-            <Sonner />
           </Providers>
         </MantineProviderWrapper>
       </body>

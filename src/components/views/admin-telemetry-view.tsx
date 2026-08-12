@@ -10,10 +10,7 @@ import {
   Upload, Play, Power,
 } from 'lucide-react'
 import { useState } from 'react'
-import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { ScrollArea } from '@/components/ui/scroll-area'
+import { TextInput, Select, ScrollArea, Group } from '@mantine/core'
 import { SkeletonList } from '@/components/common/skeleton'
 import { EmptyState } from '@/components/common/empty-state'
 import { LiveIndicator } from '@/components/common/live-indicator'
@@ -86,26 +83,26 @@ export function AdminTelemetryView({ locale }: { locale: Locale }) {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col md:flex-row gap-3">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={t.admin.instances.searchPlaceholder}
-            className="pl-10 glass-base border-0 h-11"
-          />
-        </div>
-        <Select value={eventType} onValueChange={setEventType}>
-          <SelectTrigger className="w-full md:w-48 glass-base border-0 h-11"><SelectValue /></SelectTrigger>
-          <SelectContent className="glass-floating">
-            <SelectItem value="all">{t.admin.telemetry.allTypes}</SelectItem>
-            {Object.entries(t.admin.telemetry.eventTypes).map(([k, v]) => (
-              <SelectItem key={k} value={k}>{v}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      <Group gap="sm" className="flex flex-col md:flex-row">
+        <TextInput
+          leftSection={<Search className="w-4 h-4" />}
+          placeholder={t.admin.instances.searchPlaceholder}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          variant="filled"
+          className="flex-1"
+        />
+        <Select
+          value={eventType}
+          onChange={(v) => setEventType(v || 'all')}
+          data={[
+            { value: 'all', label: t.admin.telemetry.allTypes },
+            ...Object.entries(t.admin.telemetry.eventTypes).map(([k, v]) => ({ value: k, label: v as string })),
+          ]}
+          variant="filled"
+          w={{ base: '100%', md: 200 }}
+        />
+      </Group>
 
       {/* Telemetry events table — responsive */}
       <div className="glass-card rounded-2xl overflow-hidden">
@@ -116,7 +113,7 @@ export function AdminTelemetryView({ locale }: { locale: Locale }) {
           <div className="col-span-4">{t.admin.telemetry.payload}</div>
           <div className="col-span-3 text-right">{t.admin.telemetry.received}</div>
         </div>
-        <ScrollArea className="h-[60vh]">
+        <ScrollArea h="60vh">
           {isLoading ? (
             <SkeletonList rows={8} />
           ) : filtered.length === 0 ? (

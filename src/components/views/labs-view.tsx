@@ -9,12 +9,7 @@ import {
   ArrowUp, ArrowDown, Activity,
 } from 'lucide-react'
 import { useState } from 'react'
-import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select'
-import { ScrollArea } from '@/components/ui/scroll-area'
+import { TextInput, Select, ScrollArea, Group } from '@mantine/core'
 import { EmptyState } from '@/components/common/empty-state'
 import { SkeletonList } from '@/components/common/skeleton'
 import { StatCard } from '@/components/common/stat-card'
@@ -81,27 +76,25 @@ export function LabsView({ locale }: { locale: Locale }) {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col md:flex-row gap-3 items-stretch">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={t.labs.searchPlaceholder}
-            className="pl-10 glass-base border-0 h-11"
-          />
-        </div>
-        <Select value={category} onValueChange={setCategory}>
-          <SelectTrigger className="w-full md:w-48 glass-base border-0 h-11">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent className="glass-floating">
-            <SelectItem value="all">{t.common.allCategories}</SelectItem>
-            {Object.entries(CATEGORY_LABELS).map(([k, v]) => (
-              <SelectItem key={k} value={k}>{v[locale as 'fr' | 'en']}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <Group gap="sm" align="stretch" className="flex flex-col md:flex-row">
+        <TextInput
+          leftSection={<Search className="w-4 h-4" />}
+          placeholder={t.labs.searchPlaceholder}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          variant="filled"
+          className="flex-1"
+        />
+        <Select
+          value={category}
+          onChange={(v) => setCategory(v || 'all')}
+          data={[
+            { value: 'all', label: t.common.allCategories },
+            ...Object.entries(CATEGORY_LABELS).map(([k, v]) => ({ value: k, label: v[locale as 'fr' | 'en'] })),
+          ]}
+          variant="filled"
+          w={{ base: '100%', md: 200 }}
+        />
         <button
           onClick={() => setAbnormalOnly(!abnormalOnly)}
           className={`px-4 h-11 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${abnormalOnly ? 'bg-destructive text-destructive-foreground' : 'glass-base'}`}
@@ -109,7 +102,7 @@ export function LabsView({ locale }: { locale: Locale }) {
           <AlertTriangle className="w-4 h-4" />
           {t.labs.abnormalOnly}
         </button>
-      </div>
+      </Group>
 
       {/* Lab results table */}
       <div className="glass-card rounded-2xl overflow-hidden">
@@ -121,7 +114,7 @@ export function LabsView({ locale }: { locale: Locale }) {
           <div className="col-span-2 hidden md:block">{t.common.date}</div>
           <div className="col-span-3 md:col-span-1 text-right">{t.labs.flag}</div>
         </div>
-        <ScrollArea className="h-[55vh]">
+        <ScrollArea h="55vh">
           {isLoading ? (
             <SkeletonList rows={8} />
           ) : filtered.length === 0 ? (
